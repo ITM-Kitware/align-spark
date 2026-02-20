@@ -24,16 +24,57 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
+const renderDeciderCard = async (container) => {
+  const result = await decide(state.scenarioId, "baseline");
+  const llm = result.llmBackbone?.split("/").pop() || "Language Model";
+  container.innerHTML = `
+    <div class="decider-node">
+      <div class="decider-node-icon">&#x1F916;</div>
+      <div class="decider-node-text">
+        <div class="decider-label">Baseline Language Model</div>
+        <div class="decider-model-name">${llm}</div>
+      </div>
+    </div>
+  `;
+};
+
+const renderBaselineScenario = (container, scenario) => {
+  const descHtml = scenario.description
+    .split("\n")
+    .filter((p) => p.trim())
+    .map((p) => `<p>${p}</p>`)
+    .join("");
+
+  const choicesHtml = scenario.choices
+    .map(
+      (c, i) =>
+        `<div class="scenario-choice-card"><span class="choice-letter">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
+    )
+    .join("");
+
+  container.innerHTML = `
+    <wa-details class="baseline-scenario-panel">
+      <span slot="summary" class="accordion-summary"><span class="panel-eyebrow">Scenario</span>${scenario.title}</span>
+      <div class="accordion-scenario-body">
+        <div class="accordion-scenario-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    </wa-details>
+  `;
+};
+
 const renderBaselineCard = async (container) => {
   const result = await decide(state.scenarioId, "baseline");
   const scenario = getScenario(state.scenarioId);
+  renderBaselineScenario($("[data-baseline-scenario]"), scenario);
   const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
   const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + idx)}</span>` : "";
   const llm = result.llmBackbone?.split("/").pop() || "";
   container.innerHTML = `
-    <div class="eyebrow">Baseline Language Model <span class="decision-model-info">${llm}</span></div>
-    <div class="decision-choice">${letterHTML}${result.decision}</div>
-    <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"><div class="decision-rationale">${result.justification}</div></wa-details>
+    <wa-details class="baseline-decision-panel">
+      <span slot="summary" class="decision-choice"><span class="panel-eyebrow">Decision</span><span class="decision-choice-row">${letterHTML}${result.decision}</span></span>
+      <div class="decision-rationale">${result.justification}</div>
+    </wa-details>
   `;
 };
 
@@ -47,6 +88,7 @@ const renderComparison = async () => {
 
 const handleScenarioChange = async (id) => {
   state.scenarioId = id;
+  await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
   await renderComparison();
 };
@@ -84,6 +126,7 @@ const handleSandboxScenarioChange = async (id) => {
     handleScenarioChange,
     { showKdmaTag: false },
   );
+  await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
   await renderComparison();
   await renderSandbox();
@@ -184,6 +227,23 @@ const setupTocObserver = () => {
   $$("[data-section]").forEach((section) => observer.observe(section));
 };
 
+const CHEVRON_SVG = `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+const setupNextButtons = () => {
+  const sections = $$("[data-section]");
+  sections.forEach((section, i) => {
+    if (i === sections.length - 1) return;
+    const nextSection = sections[i + 1];
+    const btn = document.createElement("button");
+    btn.className = "section-next";
+    btn.innerHTML = `<span class="section-next-label">Next</span><span class="section-next-chevron">${CHEVRON_SVG}</span>`;
+    btn.addEventListener("click", () => {
+      nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    section.querySelector(".section-inner").appendChild(btn);
+  });
+};
+
 const setupTocClicks = () => {
   $$(".toc-pill").forEach((pill) => {
     pill.addEventListener("click", () => {
@@ -222,10 +282,12 @@ const initSandbox = async () => {
 
 const init = async () => {
   initScenario();
+  await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
   initValues();
   await renderComparison();
   await initSandbox();
+  setupNextButtons();
   setupRevealElements();
   setupRevealObserver();
   setupTocObserver();
