@@ -134,12 +134,99 @@ const renderAlignedDecision = async (container) => {
   `;
 };
 
-const renderComparison = async () => {
-  const container = $("[data-comparison]");
-  const openState = getDetailsOpenState(container);
+const renderComparisonScenario = (container, scenario) => {
+  const descHtml = scenario.description
+    .split("\n")
+    .filter((p) => p.trim())
+    .map((p) => `<p>${p}</p>`)
+    .join("");
+
+  const choicesHtml = scenario.choices
+    .map(
+      (c, i) =>
+        `<div class="scenario-choice-card"><span class="choice-letter">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
+    )
+    .join("");
+
+  container.innerHTML = `
+    <wa-details class="baseline-scenario-panel">
+      <span slot="summary" class="accordion-summary"><span class="panel-eyebrow">Scenario</span>${scenario.title}</span>
+      <div class="accordion-scenario-body">
+        <div class="accordion-scenario-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    </wa-details>
+  `;
+};
+
+const renderComparisonDeciders = async () => {
   const baseline = await decide(state.scenarioId, "baseline");
   const aligned = await decide(state.scenarioId, "aligned", state.values);
-  renderDecisionComparison(container, baseline, aligned, getScenario(state.scenarioId), openState);
+
+  const baselineLlm = baseline.llmBackbone?.split("/").pop() || "Language Model";
+  $("[data-comparison-baseline-decider]").innerHTML = `
+    <div class="decider-node">
+      <div class="decider-node-icon">&#x1F916;</div>
+      <div class="decider-node-text">
+        <div class="decider-label">Baseline Language Model</div>
+        <div class="decider-model-name">${baselineLlm}</div>
+      </div>
+    </div>
+  `;
+
+  const adm = aligned.admName?.replace(/_/g, " ") || "Aligned Decider";
+  const displayAdm = {
+    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
+  }[aligned.admName] || adm;
+  const alignedLlm = aligned.llmBackbone?.split("/").pop() || "";
+  $("[data-comparison-aligned-decider]").innerHTML = `
+    <div class="aligned-decider-node">
+      <div class="decider-node-icon">&#x1F9ED;</div>
+      <div class="decider-node-text">
+        <div class="decider-label">Value-Aligned Decider</div>
+        <div class="decider-model-name">${displayAdm}${alignedLlm ? ` · ${alignedLlm}` : ""}</div>
+      </div>
+    </div>
+  `;
+};
+
+const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
+  const changed = baseline.choiceId !== aligned.choiceId;
+  const openState = getDetailsOpenState(container);
+  const alignedOpen = openState?.[0] ? " open" : "";
+  const baselineOpen = openState?.[1] ? " open" : "";
+
+  const alignedIdx = scenario.choices.findIndex((c) => c.id === aligned.choiceId);
+  const alignedLetter = alignedIdx >= 0 ? `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + alignedIdx)}</span>` : "";
+  const baselineIdx = scenario.choices.findIndex((c) => c.id === baseline.choiceId);
+  const baselineLetter = baselineIdx >= 0 ? `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + baselineIdx)}</span>` : "";
+
+  container.innerHTML = `
+    <div class="decision-comparison">
+      <div class="decision-col">
+        <div class="decision-choice">${baselineLetter}${baseline.decision}</div>
+        <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${baselineOpen}><div class="decision-rationale">${baseline.justification}</div></wa-details>
+      </div>
+      <div class="comparison-divider">
+        <div class="divider-line"></div>
+        <div class="comparison-badge ${changed ? "changed" : "same"}">${changed ? "Changed" : "Same"}</div>
+        <div class="divider-line"></div>
+      </div>
+      <div class="decision-col">
+        <div class="decision-choice">${alignedLetter}${aligned.decision}</div>
+        <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${alignedOpen}><div class="decision-rationale">${aligned.justification}</div></wa-details>
+      </div>
+    </div>
+  `;
+};
+
+const renderComparison = async () => {
+  const scenario = getScenario(state.scenarioId);
+  renderComparisonScenario($("[data-comparison-scenario]"), scenario);
+  await renderComparisonDeciders();
+  const baseline = await decide(state.scenarioId, "baseline");
+  const aligned = await decide(state.scenarioId, "aligned", state.values);
+  renderComparisonDecisions($("[data-comparison-decisions]"), aligned, baseline, scenario);
 };
 
 const updateValuesFlow = async () => {
@@ -161,6 +248,8 @@ const syncAllValueControls = () => {
   setSliderValues($("[data-simple-sliders]"), state.values);
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
   setSliderValues($("[data-values-sliders]"), state.values);
+  buildPresetChips($("[data-comparison-presets]"), state.presetId, handleComparisonPresetSelect);
+  setSliderValues($("[data-comparison-sliders]"), state.values);
 };
 
 const handlePresetSelect = async (presetId) => {
@@ -195,6 +284,28 @@ const handleSimpleValuesChange = async (newValues) => {
   syncAllValueControls();
   await updateValuesFlow();
   await renderComparison();
+};
+
+const handleComparisonPresetSelect = async (presetId) => {
+  state.presetId = presetId;
+  const preset = getPreset(presetId);
+  state.values = { ...preset.values };
+  buildPresetChips($("[data-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
+  setSliderValues($("[data-sandbox-sliders]"), state.values);
+  syncAllValueControls();
+  await updateValuesFlow();
+  await renderComparison();
+  await renderSandbox();
+};
+
+const handleComparisonValuesChange = async (newValues) => {
+  state.values = newValues;
+  state.presetId = null;
+  buildPresetChips($("[data-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
+  syncAllValueControls();
+  await updateValuesFlow();
+  await renderComparison();
+  await renderSandbox();
 };
 
 const renderSandbox = async () => {
@@ -378,6 +489,12 @@ const initAlignment = async () => {
   await updateValuesFlow();
 };
 
+const initComparison = async () => {
+  buildPresetChips($("[data-comparison-presets]"), state.presetId, handleComparisonPresetSelect);
+  buildValueControls($("[data-comparison-sliders]"), state.values, handleComparisonValuesChange);
+  await renderComparison();
+};
+
 const initSandbox = async () => {
   buildScenarioAccordion(
     $("[data-sandbox-scenarios]"),
@@ -396,7 +513,7 @@ const init = async () => {
   await renderBaselineCard($("[data-baseline-card]"));
   initSimpleValues();
   await initAlignment();
-  await renderComparison();
+  await initComparison();
   await initSandbox();
   setupNextButtons();
   setupRevealElements();

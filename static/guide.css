@@ -600,6 +600,131 @@ body {
   border-top: 1px solid var(--border);
 }
 
+.comparison-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.comparison-flow-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  width: 100%;
+}
+
+.comparison-input-col {
+  min-width: 0;
+}
+
+.comparison-flow .values-presets {
+  margin-bottom: 20px;
+}
+
+.comparison-flow .preset-chip {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+}
+
+.comparison-flow .values-sliders {
+  max-width: none;
+}
+
+.comparison-flow-stems {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  width: 100%;
+}
+
+.comparison-stem-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.comparison-stem {
+  width: 2px;
+  height: 28px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.comparison-input-connectors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  width: 100%;
+  position: relative;
+}
+
+.comparison-merge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.comparison-merge-arms {
+  position: relative;
+  width: 100%;
+  height: 24px;
+}
+
+.comparison-merge-arm-left {
+  position: absolute;
+  left: 0;
+  right: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  border-bottom-left-radius: 8px;
+}
+
+.comparison-merge-arm-right {
+  position: absolute;
+  left: 50%;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-right: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  border-bottom-right-radius: 8px;
+}
+
+.comparison-merge-stem {
+  width: 2px;
+  height: 12px;
+  background: var(--border);
+}
+
+.comparison-cross-arm {
+  position: absolute;
+  left: calc(25% - 8px);
+  right: calc(50% - 14px);
+  top: 8px;
+  height: 2px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.comparison-flow-deciders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  width: 100%;
+}
+
+.comparison-decider-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.comparison-flow-decisions {
+  width: 100%;
+}
+
 .guide-section {
   position: relative;
 }
@@ -679,5 +804,11 @@ body {
 
   .sandbox-scenario {
     grid-row: auto;
+  }
+
+  .comparison-flow-inputs,
+  .comparison-flow-stems,
+  .comparison-flow-deciders {
+    grid-template-columns: 1fr;
   }
 }

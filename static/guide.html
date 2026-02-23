@@ -92,13 +92,13 @@
             <div class="values-flow">
               <div class="values-flow-inputs">
                 <div class="values-flow-left">
+                  <div class="flow-input-label">Scenario</div>
+                  <div data-values-scenario></div>
+                </div>
+                <div class="values-flow-right">
                   <div class="flow-input-label">Value Profile</div>
                   <div class="values-presets" data-values-presets></div>
                   <div class="values-sliders" data-values-sliders></div>
-                </div>
-                <div class="values-flow-right">
-                  <div class="flow-input-label">Scenario</div>
-                  <div data-values-scenario></div>
                 </div>
               </div>
               <div class="values-flow-connector">
@@ -119,7 +119,42 @@
           <div class="section-inner">
             <h2 class="section-heading">Comparison</h2>
             <p class="section-subtitle">See how alignment changes the outcome side by side.</p>
-            <div class="comparison-container" data-comparison></div>
+            <div class="comparison-flow">
+              <div class="comparison-flow-inputs">
+                <div class="comparison-input-col">
+                  <div class="flow-input-label">Scenario</div>
+                  <div data-comparison-scenario></div>
+                </div>
+                <div class="comparison-input-col">
+                  <div class="flow-input-label">Value Profile</div>
+                  <div class="values-presets" data-comparison-presets></div>
+                  <div class="values-sliders" data-comparison-sliders></div>
+                </div>
+              </div>
+
+              <div class="comparison-input-connectors">
+                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+                <div class="comparison-merge">
+                  <div class="comparison-merge-arms">
+                    <div class="comparison-merge-arm-left"></div>
+                    <div class="comparison-merge-arm-right"></div>
+                  </div>
+                  <div class="comparison-merge-stem"></div>
+                </div>
+              </div>
+
+              <div class="comparison-flow-deciders">
+                <div class="comparison-decider-cell" data-comparison-baseline-decider></div>
+                <div class="comparison-decider-cell" data-comparison-aligned-decider></div>
+              </div>
+
+              <div class="comparison-flow-stems">
+                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+              </div>
+
+              <div class="comparison-flow-decisions" data-comparison-decisions></div>
+            </div>
           </div>
         </section>
 
