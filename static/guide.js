@@ -227,6 +227,39 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
   `;
 };
 
+const drawComparisonCrossarm = () => {
+  const svg = $("[data-comparison-crossarm]");
+  const flow = svg.closest(".comparison-flow");
+  const scenarioPanel = flow.querySelector("[data-comparison-scenario] wa-details");
+  const alignedDecider = flow.querySelector("[data-comparison-aligned-decider] .aligned-decider-node");
+  if (!scenarioPanel || !alignedDecider) return;
+
+  const fr = flow.getBoundingClientRect();
+  const sr = scenarioPanel.getBoundingClientRect();
+  const ar = alignedDecider.getBoundingClientRect();
+
+  const x1 = sr.right - fr.left;
+  const y1 = (sr.top + sr.bottom) / 2 - fr.top;
+  const y2 = (ar.top + ar.bottom) / 2 - fr.top;
+  const x2 = ar.left - fr.left;
+  const xDrop = x1 + 16;
+  const r = 8;
+
+  const d = [
+    `M ${x1} ${y1}`,
+    `H ${xDrop - r}`,
+    `Q ${xDrop} ${y1} ${xDrop} ${y1 + r}`,
+    `V ${y2 - r}`,
+    `Q ${xDrop} ${y2} ${xDrop + r} ${y2}`,
+    `H ${x2}`,
+  ].join(" ");
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--border)" stroke-width="2" />`;
+};
+
+const scheduleDrawCrossarm = () => {
+  requestAnimationFrame(() => requestAnimationFrame(drawComparisonCrossarm));
+};
+
 const renderComparison = async () => {
   const scenario = getScenario(state.scenarioId);
   renderComparisonScenario($("[data-comparison-scenario]"), scenario);
@@ -234,6 +267,7 @@ const renderComparison = async () => {
   const baseline = await decide(state.scenarioId, "baseline");
   const aligned = await decide(state.scenarioId, "aligned", state.values);
   renderComparisonDecisions($("[data-comparison-decisions]"), aligned, baseline, scenario);
+  scheduleDrawCrossarm();
 };
 
 const updateValuesFlow = async () => {
@@ -527,6 +561,7 @@ const init = async () => {
   setupRevealObserver();
   setupTocObserver();
   setupTocClicks();
+  window.addEventListener("resize", drawComparisonCrossarm);
 };
 
 ready.then(() => {

@@ -66,8 +66,10 @@
             <h2 class="section-heading">Set Your Values</h2>
             <p class="section-subtitle">Choose a preset or fine-tune the value dimensions that guide aligned decisions.</p>
             <div class="values-centered-flow">
-              <div class="values-presets" data-simple-presets></div>
-              <div class="values-sliders" data-simple-sliders></div>
+              <wa-details class="values-accordion" open>
+                <span slot="summary" class="values-presets" data-simple-presets></span>
+                <div class="values-sliders" data-simple-sliders></div>
+              </wa-details>
               <div class="values-adm-stem"></div>
               <wa-details class="values-adm-panel">
                 <span slot="summary" class="values-adm-summary">
@@ -97,8 +99,10 @@
                 </div>
                 <div class="values-flow-right">
                   <div class="flow-input-label">Value Profile</div>
-                  <div class="values-presets" data-values-presets></div>
-                  <div class="values-sliders" data-values-sliders></div>
+                  <wa-details class="values-accordion" open>
+                    <span slot="summary" class="values-presets" data-values-presets></span>
+                    <div class="values-sliders" data-values-sliders></div>
+                  </wa-details>
                 </div>
               </div>
               <div class="values-flow-connector">
@@ -127,21 +131,18 @@
                 </div>
                 <div class="comparison-input-col">
                   <div class="flow-input-label">Value Profile</div>
-                  <div class="values-presets" data-comparison-presets></div>
-                  <div class="values-sliders" data-comparison-sliders></div>
+                  <wa-details class="values-accordion" data-comparison-values>
+                    <span slot="summary" class="values-presets" data-comparison-presets></span>
+                    <div class="values-sliders" data-comparison-sliders></div>
+                  </wa-details>
                 </div>
               </div>
 
-              <div class="comparison-input-connectors">
+              <div class="comparison-connectors">
                 <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-                <div class="comparison-merge">
-                  <div class="comparison-merge-arms">
-                    <div class="comparison-merge-arm-left"></div>
-                    <div class="comparison-merge-arm-right"></div>
-                  </div>
-                  <div class="comparison-merge-stem"></div>
-                </div>
+                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
               </div>
+              <svg class="comparison-crossarm" data-comparison-crossarm></svg>
 
               <div class="comparison-flow-deciders">
                 <div class="comparison-decider-cell" data-comparison-baseline-decider></div>
