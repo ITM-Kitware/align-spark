@@ -215,9 +215,7 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
         <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${baselineOpen}><div class="decision-rationale">${baseline.justification}</div></wa-details>
       </div>
       <div class="comparison-divider">
-        <div class="divider-line"></div>
-        <div class="comparison-badge ${changed ? "changed" : "same"}">${changed ? "Changed" : "Same"}</div>
-        <div class="divider-line"></div>
+        <div class="comparison-badge ${changed ? "changed" : "same"}">${changed ? "≠" : "=="}</div>
       </div>
       <div class="decision-col">
         <div class="decision-choice">${alignedLetter}${aligned.decision}</div>
@@ -246,12 +244,12 @@ const drawComparisonCrossarm = () => {
   const r = 8;
 
   const d = [
-    `M ${x1} ${y1}`,
+    `M ${x1 + 6} ${y1}`,
     `H ${xDrop - r}`,
     `Q ${xDrop} ${y1} ${xDrop} ${y1 + r}`,
     `V ${y2 - r}`,
     `Q ${xDrop} ${y2} ${xDrop + r} ${y2}`,
-    `H ${x2}`,
+    `H ${x2 - 6}`,
   ].join(" ");
   svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--border)" stroke-width="2" />`;
 };
@@ -533,6 +531,8 @@ const initAlignment = async () => {
 const initComparison = async () => {
   buildPresetChips($("[data-comparison-presets]"), state.presetId, handleComparisonPresetSelect);
   buildValueControls($("[data-comparison-sliders]"), state.values, handleComparisonValuesChange);
+  $("[data-comparison-values]").addEventListener("wa-after-show", drawComparisonCrossarm);
+  $("[data-comparison-values]").addEventListener("wa-after-hide", drawComparisonCrossarm);
   await renderComparison();
 };
 

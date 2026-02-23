@@ -211,18 +211,17 @@ body {
   --border-radius: 14px;
   --header-padding: 16px 20px;
   --content-padding: 0 20px 20px;
-  border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .guide-section wa-details:hover {
-  border-color: var(--accent);
+  --border-color: var(--accent);
 }
 
 .guide-section wa-details[open] {
-  border-color: var(--accent);
+  --border-color: var(--accent);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
@@ -405,6 +404,13 @@ body {
 .values-flow-left,
 .values-flow-right {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.values-flow-left wa-details,
+.values-flow-right wa-details {
+  flex: 1;
 }
 
 .values-flow-right {
@@ -649,16 +655,27 @@ body {
 
 .comparison-input-col {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.values-accordion {
+.comparison-input-col wa-details {
+  flex: 1;
+}
+
+.guide-section .values-accordion {
   margin-bottom: 0;
+  --header-padding: 10px 16px;
+  background: none;
+  border-radius: 0;
 }
 
 .values-accordion .values-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 0;
+  align-items: center;
 }
 
 .values-accordion .preset-chip {
