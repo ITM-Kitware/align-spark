@@ -65,8 +65,23 @@
           <div class="section-inner">
             <h2 class="section-heading">Set Your Values</h2>
             <p class="section-subtitle">Choose a preset or fine-tune the value dimensions that guide aligned decisions.</p>
-            <div class="values-presets" data-simple-presets></div>
-            <div class="values-sliders" data-simple-sliders></div>
+            <div class="values-centered-flow">
+              <div class="values-presets" data-simple-presets></div>
+              <div class="values-sliders" data-simple-sliders></div>
+              <div class="values-adm-stem"></div>
+              <wa-details class="values-adm-panel">
+                <span slot="summary" class="values-adm-summary">
+                  <span class="decider-node-icon">&#x1F9ED;</span>
+                  <span class="decider-node-text">
+                    <span class="decider-label">Value-Aligned Decider</span>
+                    <span class="decider-model-name">Alignment Algorithm</span>
+                  </span>
+                </span>
+                <div class="values-adm-explanation">
+                  An aligned decision maker takes these value weights and uses them to re-rank the available choices in a scenario. Instead of relying solely on the language model's default reasoning, it steers the decision toward the priorities you've set — trading off dimensions like loyalty, fairness, and safety according to your profile.
+                </div>
+              </wa-details>
+            </div>
           </div>
         </section>
 
