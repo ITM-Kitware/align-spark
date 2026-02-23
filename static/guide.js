@@ -1,6 +1,7 @@
 import {
   SCENARIOS,
   PRESETS,
+  DIMENSIONS,
   decide,
   ready,
   buildPresetChips,
@@ -363,17 +364,18 @@ const handleComparisonValuesChange = async (newValues) => {
 const drawSandboxCrossarm = () => {
   const svg = $("[data-sandbox-crossarm]");
   const flow = svg.closest(".comparison-flow");
-  const scenarioAccordion = flow.querySelector("[data-sandbox-scenarios]");
-  const activeDetails = scenarioAccordion?.querySelector("wa-details[open]");
+  const selectedRow = flow.querySelector(".scenario-radio-row.selected");
+  const radio = selectedRow?.querySelector(".scenario-radio");
   const alignedDecider = flow.querySelector("[data-sandbox-aligned-decider] .aligned-decider-node");
-  if (!activeDetails || !alignedDecider) return;
+  if (!radio || !alignedDecider) return;
 
   const fr = flow.getBoundingClientRect();
-  const sr = activeDetails.getBoundingClientRect();
+  const sr = selectedRow.getBoundingClientRect();
+  const rr = radio.getBoundingClientRect();
   const ar = alignedDecider.getBoundingClientRect();
 
   const x1 = sr.right - fr.left;
-  const y1 = (sr.top + sr.bottom) / 2 - fr.top;
+  const y1 = (rr.top + rr.bottom) / 2 - fr.top;
   const y2 = (ar.top + ar.bottom) / 2 - fr.top;
   const x2 = ar.left - fr.left;
   const xDrop = x1 + 16;
@@ -615,8 +617,55 @@ const initComparison = async () => {
   await renderComparison();
 };
 
+const buildSandboxScenarioAccordion = (container, scenarios, currentId, onSelect) => {
+  container.innerHTML = "";
+
+  scenarios.forEach((scenario) => {
+    const row = document.createElement("div");
+    row.className = `scenario-radio-row${scenario.id === currentId ? " selected" : ""}`;
+    row.dataset.scenarioId = scenario.id;
+
+    const radio = document.createElement("button");
+    radio.className = "scenario-radio";
+    radio.addEventListener("click", () => {
+      container.querySelectorAll(".scenario-radio-row").forEach((r) => r.classList.remove("selected"));
+      row.classList.add("selected");
+      onSelect(scenario.id);
+    });
+
+    const details = document.createElement("wa-details");
+    const dim = DIMENSIONS.find((d) => d.id === scenario.kdmaType);
+    const kdmaLabel = dim ? dim.label : "";
+
+    const descHtml = scenario.description
+      .split("\n")
+      .filter((p) => p.trim())
+      .map((p) => `<p>${p}</p>`)
+      .join("");
+
+    const choicesHtml = scenario.choices
+      .map(
+        (c, i) =>
+          `<div class="scenario-choice-card"><span class="choice-letter">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
+      )
+      .join("");
+
+    details.innerHTML = `
+      <span slot="summary" class="accordion-summary">${scenario.title}${kdmaLabel ? `<span class="accordion-kdma-tag">${kdmaLabel}</span>` : ""}</span>
+      <div class="accordion-scenario-body">
+        <div class="accordion-scenario-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    `;
+
+    row.appendChild(radio);
+    row.appendChild(details);
+    container.appendChild(row);
+  });
+};
+
 const initSandbox = async () => {
-  buildScenarioAccordion(
+  buildSandboxScenarioAccordion(
     $("[data-sandbox-scenarios]"),
     SCENARIOS,
     state.scenarioId,
@@ -627,6 +676,7 @@ const initSandbox = async () => {
   $("[data-sandbox-values]").addEventListener("wa-after-show", drawSandboxCrossarm);
   $("[data-sandbox-values]").addEventListener("wa-after-hide", drawSandboxCrossarm);
   $("[data-sandbox-scenarios]").addEventListener("wa-after-show", scheduleDrawSandboxCrossarm);
+  $("[data-sandbox-scenarios]").addEventListener("wa-after-hide", scheduleDrawSandboxCrossarm);
   await renderSandbox();
 };
 
