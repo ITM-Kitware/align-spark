@@ -78,6 +78,62 @@ const renderBaselineCard = async (container) => {
   `;
 };
 
+const renderValuesScenario = (container, scenario) => {
+  const descHtml = scenario.description
+    .split("\n")
+    .filter((p) => p.trim())
+    .map((p) => `<p>${p}</p>`)
+    .join("");
+
+  const choicesHtml = scenario.choices
+    .map(
+      (c, i) =>
+        `<div class="scenario-choice-card"><span class="choice-letter">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
+    )
+    .join("");
+
+  container.innerHTML = `
+    <wa-details class="baseline-scenario-panel">
+      <span slot="summary" class="accordion-summary"><span class="panel-eyebrow">Scenario</span>${scenario.title}</span>
+      <div class="accordion-scenario-body">
+        <div class="accordion-scenario-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    </wa-details>
+  `;
+};
+
+const renderAlignedDecider = async (container) => {
+  const result = await decide(state.scenarioId, "aligned", state.values);
+  const adm = result.admName?.replace(/_/g, " ") || "Aligned Decider";
+  const displayAdm = {
+    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
+  }[result.admName] || adm;
+  const llm = result.llmBackbone?.split("/").pop() || "";
+  container.innerHTML = `
+    <div class="aligned-decider-node">
+      <div class="decider-node-icon">&#x1F9ED;</div>
+      <div class="decider-node-text">
+        <div class="decider-label">Value-Aligned Decider</div>
+        <div class="decider-model-name">${displayAdm}${llm ? ` · ${llm}` : ""}</div>
+      </div>
+    </div>
+  `;
+};
+
+const renderAlignedDecision = async (container) => {
+  const result = await decide(state.scenarioId, "aligned", state.values);
+  const scenario = getScenario(state.scenarioId);
+  const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
+  const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + idx)}</span>` : "";
+  container.innerHTML = `
+    <wa-details class="aligned-decision-panel">
+      <span slot="summary" class="decision-choice"><span class="panel-eyebrow">Decision</span><span class="decision-choice-row">${letterHTML}${result.decision}</span></span>
+      <div class="decision-rationale">${result.justification}</div>
+    </wa-details>
+  `;
+};
+
 const renderComparison = async () => {
   const container = $("[data-comparison]");
   const openState = getDetailsOpenState(container);
@@ -86,10 +142,17 @@ const renderComparison = async () => {
   renderDecisionComparison(container, baseline, aligned, getScenario(state.scenarioId), openState);
 };
 
+const updateValuesFlow = async () => {
+  renderValuesScenario($("[data-values-scenario]"), getScenario(state.scenarioId));
+  await renderAlignedDecider($("[data-aligned-decider]"));
+  await renderAlignedDecision($("[data-aligned-decision]"));
+};
+
 const handleScenarioChange = async (id) => {
   state.scenarioId = id;
   await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
+  await updateValuesFlow();
   await renderComparison();
 };
 
@@ -99,6 +162,7 @@ const handlePresetSelect = async (presetId) => {
   state.values = { ...preset.values };
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
   setSliderValues($("[data-values-sliders]"), state.values);
+  await updateValuesFlow();
   await renderComparison();
 };
 
@@ -106,6 +170,7 @@ const handleValuesChange = async (newValues) => {
   state.values = newValues;
   state.presetId = null;
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
+  await updateValuesFlow();
   await renderComparison();
 };
 
@@ -128,6 +193,7 @@ const handleSandboxScenarioChange = async (id) => {
   );
   await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
+  await updateValuesFlow();
   await renderComparison();
   await renderSandbox();
 };
@@ -140,6 +206,7 @@ const handleSandboxPresetSelect = async (presetId) => {
   setSliderValues($("[data-sandbox-sliders]"), state.values);
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
   setSliderValues($("[data-values-sliders]"), state.values);
+  await updateValuesFlow();
   await renderComparison();
   await renderSandbox();
 };
@@ -150,6 +217,7 @@ const handleSandboxValuesChange = async (newValues) => {
   buildPresetChips($("[data-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
   setSliderValues($("[data-values-sliders]"), state.values);
+  await updateValuesFlow();
   await renderComparison();
   await renderSandbox();
 };
@@ -274,9 +342,10 @@ const initScenario = () => {
   );
 };
 
-const initValues = () => {
+const initValues = async () => {
   buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
   buildValueControls($("[data-values-sliders]"), state.values, handleValuesChange);
+  await updateValuesFlow();
 };
 
 const initSandbox = async () => {
@@ -295,7 +364,7 @@ const init = async () => {
   initScenario();
   await renderDeciderCard($("[data-decider-card]"));
   await renderBaselineCard($("[data-baseline-card]"));
-  initValues();
+  await initValues();
   await renderComparison();
   await initSandbox();
   setupNextButtons();

@@ -63,9 +63,30 @@
         <section class="guide-section" data-section="values">
           <div class="section-inner">
             <h2 class="section-heading">Set Your Values</h2>
-            <p class="section-subtitle">Choose a preset or fine-tune the value dimensions.</p>
-            <div class="values-presets" data-values-presets></div>
-            <div class="values-sliders" data-values-sliders></div>
+            <p class="section-subtitle">Choose a preset or fine-tune the value dimensions, then see how alignment changes the decision.</p>
+            <div class="values-flow">
+              <div class="values-flow-inputs">
+                <div class="values-flow-left">
+                  <div class="flow-input-label">Value Profile</div>
+                  <div class="values-presets" data-values-presets></div>
+                  <div class="values-sliders" data-values-sliders></div>
+                </div>
+                <div class="values-flow-right">
+                  <div class="flow-input-label">Scenario</div>
+                  <div data-values-scenario></div>
+                </div>
+              </div>
+              <div class="values-flow-connector">
+                <div class="connector-lines">
+                  <div class="connector-arm connector-arm-left"></div>
+                  <div class="connector-arm connector-arm-right"></div>
+                </div>
+                <div class="connector-stem"></div>
+              </div>
+              <div class="aligned-decider-card" data-aligned-decider></div>
+              <div class="aligned-decision-stem"></div>
+              <div class="aligned-decision-card" data-aligned-decision></div>
+            </div>
           </div>
         </section>
 
