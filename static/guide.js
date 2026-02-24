@@ -77,10 +77,14 @@ const renderBaselineCard = async (container) => {
   renderBaselineScenario($("[data-baseline-scenario]"), scenario);
   const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
   const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + idx)}</span>` : "";
-  const llm = result.llmBackbone?.split("/").pop() || "";
+  const openState = getDetailsOpenState(container);
+  const isOpen = openState?.[0] ? " open" : "";
   container.innerHTML = `
-    <wa-details class="baseline-decision-panel">
-      <span slot="summary" class="decision-choice"><span class="panel-eyebrow">Decision</span><span class="decision-choice-row">${letterHTML}${result.decision}</span></span>
+    <wa-details class="decision-panel"${isOpen}>
+      <span slot="summary" class="decision-panel-summary">
+        <span class="decision-panel-choice">${letterHTML}${result.decision}</span>
+        <span class="decision-panel-justification-preview">${result.justification}</span>
+      </span>
       <div class="decision-rationale">${result.justification}</div>
     </wa-details>
   `;
@@ -657,6 +661,12 @@ const buildSandboxScenarioAccordion = (container, scenarios, currentId, onSelect
         ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
       </div>
     `;
+
+    details.addEventListener("wa-show", () => {
+      container.querySelectorAll("wa-details").forEach((d) => {
+        if (d !== details) d.hide();
+      });
+    });
 
     row.appendChild(radio);
     row.appendChild(details);

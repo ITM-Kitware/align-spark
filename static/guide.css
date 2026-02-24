@@ -600,6 +600,11 @@ body {
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
+.scenario-radio-row.selected wa-details {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-radius: 8px;
+}
+
 [data-sandbox-values] {
   margin-top: auto;
 }
@@ -634,6 +639,24 @@ body {
   --header-padding: 10px 16px;
   background: none;
   border-radius: 0;
+}
+
+.guide-section .values-accordion[data-sandbox-values] {
+  margin-bottom: 0;
+}
+
+.sandbox-values-stem {
+  flex: 1;
+  min-height: 8px;
+  margin-top: 8px;
+  margin-bottom: -36px;
+  background: var(--border);
+  width: 2px;
+  align-self: center;
+}
+
+[data-section="sandbox"] .comparison-connectors .comparison-stem-cell:last-child {
+  display: none;
 }
 
 .values-accordion .values-presets {
@@ -703,6 +726,11 @@ body {
 
 .comparison-flow-decisions {
   width: 100%;
+}
+
+.comparison-flow-decisions .comparison-divider {
+  justify-content: flex-start;
+  padding-top: 12px;
 }
 
 .comparison-flow-decisions .decision-col {
