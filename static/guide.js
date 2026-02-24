@@ -8,38 +8,427 @@ import {
   buildValueControls,
   setSliderValues,
   buildScenarioAccordion,
-  renderDecisionComparison,
   getDetailsOpenState,
   getScenario,
   getPreset,
 } from "./shared.js";
 
 const state = {
+  step: -1,
   scenarioId: null,
   presetId: null,
   values: {},
-  revealed: new Set(),
-  baselineShown: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
-const renderDeciderCard = async (container) => {
+const STEPS = [
+  {
+    id: "scenario",
+    heading: "Hard Choices",
+    subtitle: "Some decisions have no right answer — only trade-offs shaped by what you value most.",
+    zones: { scenario: "accordion" },
+  },
+  {
+    id: "baseline",
+    heading: "Scenario In, Decision Out",
+    subtitle: "Without value guidance, the AI just picks what seems best from the scenario.",
+    zones: { scenario: "summary", "decider-baseline": true, "decision-baseline": true },
+  },
+  {
+    id: "values",
+    heading: "Values are Priorities",
+    subtitle: "When there's no right answer, the best choice depends on what you value most.",
+    zones: { values: "with-decider" },
+  },
+  {
+    id: "alignment",
+    heading: "Value-Aligned AI",
+    subtitle: "Now the decision maker considers your values alongside the scenario — not just the facts.",
+    zones: { scenario: "summary-labeled", values: "accordion", connectors: true, "decider-aligned": true, "decision-aligned": true },
+  },
+  {
+    id: "comparison",
+    heading: "Side by Side",
+    subtitle: "See how values change the outcome.",
+    zones: { comparison: "comparison" },
+  },
+  {
+    id: "sandbox",
+    heading: "Explore",
+    subtitle: "Change scenarios and values to see decisions update in real time.",
+    zones: { comparison: "sandbox" },
+  },
+  {
+    id: "learn-more",
+    heading: "Learn More",
+    subtitle: "Explore the research and try the full interactive system.",
+    zones: { "learn-more": true },
+  },
+];
+
+const renderScenarioAccordion = (container) => {
+  container.innerHTML = `<div class="scenario-accordion-container" data-scenario-accordion></div>`;
+  buildScenarioAccordion(
+    container.querySelector("[data-scenario-accordion]"),
+    SCENARIOS,
+    state.scenarioId,
+    handleScenarioChange,
+    { showKdmaTag: false },
+  );
+};
+
+const renderScenarioSummary = (container, { showLabel = false } = {}) => {
+  const scenario = getScenario(state.scenarioId);
+  const descHtml = scenario.description
+    .split("\n")
+    .filter((p) => p.trim())
+    .map((p) => `<p>${p}</p>`)
+    .join("");
+
+  const choiceLetters = scenario.choices
+    .map((c, i) => `<span class="summary-choice-item"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span><span class="summary-choice-label">${c.label}</span></span>`)
+    .join("");
+
+  const choicesHtml = scenario.choices
+    .map(
+      (c, i) =>
+        `<div class="scenario-choice-card"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
+    )
+    .join("");
+
+  const labelHtml = showLabel ? `<div class="flow-input-label">Scenario</div>` : "";
+  container.innerHTML = `
+    ${labelHtml}
+    <wa-details class="baseline-scenario-panel">
+      <span slot="summary" class="accordion-summary">
+        <span class="accordion-summary-title">${scenario.title}</span>
+        <span class="accordion-summary-choices">${choiceLetters}</span>
+      </span>
+      <div class="accordion-scenario-body">
+        <div class="accordion-scenario-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    </wa-details>
+  `;
+};
+
+const renderDeciderBaseline = async (container) => {
   const result = await decide(state.scenarioId, "baseline");
   const llm = result.llmBackbone?.split("/").pop() || "Language Model";
   container.innerHTML = `
-    <div class="decider-node">
-      <div class="decider-node-icon">&#x1F916;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Baseline Language Model</div>
-        <div class="decider-model-name">${llm}</div>
+    <div class="decider-card">
+      <div class="decider-node">
+        <div class="decider-node-icon">&#x1F916;</div>
+        <div class="decider-node-text">
+          <div class="decider-label">Baseline Language Model</div>
+          <div class="decider-model-name">${llm}</div>
+        </div>
       </div>
     </div>
   `;
 };
 
-const renderBaselineScenario = (container, scenario) => {
+const renderDecisionBaseline = async (container) => {
+  const result = await decide(state.scenarioId, "baseline");
+  const scenario = getScenario(state.scenarioId);
+  const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
+  const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + idx)}">${String.fromCharCode(65 + idx)}</span>` : "";
+  const openState = getDetailsOpenState(container);
+  const isOpen = openState?.[0] ? " open" : "";
+  container.innerHTML = `
+    <wa-details class="decision-panel"${isOpen}>
+      <span slot="summary" class="decision-panel-summary">
+        <span class="decision-panel-choice">${letterHTML}${result.decision}</span>
+        <span class="decision-panel-justification-preview">${result.justification}</span>
+      </span>
+      <div class="decision-rationale">${result.justification}</div>
+    </wa-details>
+  `;
+};
+
+const renderValuesWithDecider = (container) => {
+  container.innerHTML = `
+    <div class="values-centered-flow">
+      <wa-details class="values-accordion" open>
+        <span slot="summary" class="values-presets" data-simple-presets></span>
+        <div class="values-sliders" data-simple-sliders></div>
+      </wa-details>
+      <div class="values-adm-stem"></div>
+      <div class="aligned-decider-node">
+        <div class="decider-node-icon">&#x1F9ED;</div>
+        <div class="decider-node-text">
+          <div class="decider-label">Value-Aligned Decider</div>
+          <div class="decider-model-name">Alignment Algorithm</div>
+        </div>
+      </div>
+    </div>
+  `;
+  buildPresetChips(container.querySelector("[data-simple-presets]"), state.presetId, handleSimplePresetSelect);
+  buildValueControls(container.querySelector("[data-simple-sliders]"), state.values, handleSimpleValuesChange);
+};
+
+const renderValuesAccordion = (container) => {
+  container.innerHTML = `
+    <div class="flow-input-label">Value Profile</div>
+    <wa-details class="values-accordion">
+      <span slot="summary" class="values-presets" data-values-presets></span>
+      <div class="values-sliders" data-values-sliders></div>
+    </wa-details>
+  `;
+  buildPresetChips(container.querySelector("[data-values-presets]"), state.presetId, handlePresetSelect);
+  buildValueControls(container.querySelector("[data-values-sliders]"), state.values, handleValuesChange);
+};
+
+const renderConnectors = (container) => {
+  container.innerHTML = `
+    <div class="values-flow-connector">
+      <div class="connector-lines">
+        <div class="connector-arm connector-arm-left"></div>
+        <div class="connector-arm connector-arm-right"></div>
+      </div>
+      <div class="connector-stem"></div>
+    </div>
+  `;
+};
+
+const renderAlignedDecider = async (container) => {
+  const result = await decide(state.scenarioId, "aligned", state.values);
+  const adm = result.admName?.replace(/_/g, " ") || "Aligned Decider";
+  const displayAdm = {
+    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
+  }[result.admName] || adm;
+  const llm = result.llmBackbone?.split("/").pop() || "";
+  container.innerHTML = `
+    <div class="aligned-decider-card">
+      <div class="aligned-decider-node">
+        <div class="decider-node-icon">&#x1F9ED;</div>
+        <div class="decider-node-text">
+          <div class="decider-label">Value-Aligned Decider</div>
+          <div class="decider-model-name">${displayAdm}${llm ? ` · ${llm}` : ""}</div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderAlignedDecision = async (container) => {
+  const result = await decide(state.scenarioId, "aligned", state.values);
+  const scenario = getScenario(state.scenarioId);
+  const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
+  const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + idx)}">${String.fromCharCode(65 + idx)}</span>` : "";
+  const wasOpen = container.querySelector(".decision-panel")?.open;
+  container.innerHTML = `
+    <div class="aligned-decision-card">
+      <div class="aligned-decision-stem"></div>
+      <wa-details class="decision-panel"${wasOpen ? " open" : ""}>
+        <span slot="summary" class="decision-panel-summary">
+          <span class="decision-panel-choice">${letterHTML}${result.decision}</span>
+          <span class="decision-panel-justification-preview">${result.justification}</span>
+        </span>
+        <div class="decision-rationale">${result.justification}</div>
+      </wa-details>
+    </div>
+  `;
+};
+
+const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
+  const openState = getDetailsOpenState(container);
+  const alignedOpen = openState?.[0] ? " open" : "";
+  const baselineOpen = openState?.[1] ? " open" : "";
+
+  const alignedIdx = scenario.choices.findIndex((c) => c.id === aligned.choiceId);
+  const alignedLetter = alignedIdx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + alignedIdx)}">${String.fromCharCode(65 + alignedIdx)}</span>` : "";
+  const baselineIdx = scenario.choices.findIndex((c) => c.id === baseline.choiceId);
+  const baselineLetter = baselineIdx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + baselineIdx)}">${String.fromCharCode(65 + baselineIdx)}</span>` : "";
+
+  return `
+    <div class="decision-comparison">
+      <div class="decision-col">
+        <wa-details class="decision-panel"${baselineOpen}>
+          <span slot="summary" class="decision-panel-summary">
+            <span class="decision-panel-choice">${baselineLetter}${baseline.decision}</span>
+            <span class="decision-panel-justification-preview">${baseline.justification}</span>
+          </span>
+          <div class="decision-rationale">${baseline.justification}</div>
+        </wa-details>
+      </div>
+      <div class="decision-col">
+        <wa-details class="decision-panel"${alignedOpen}>
+          <span slot="summary" class="decision-panel-summary">
+            <span class="decision-panel-choice">${alignedLetter}${aligned.decision}</span>
+            <span class="decision-panel-justification-preview">${aligned.justification}</span>
+          </span>
+          <div class="decision-rationale">${aligned.justification}</div>
+        </wa-details>
+      </div>
+    </div>
+  `;
+};
+
+const drawCrossarm = (svg, flow, sourceEl, targetEl) => {
+  if (!sourceEl || !targetEl) return;
+  const fr = flow.getBoundingClientRect();
+  const sr = sourceEl.getBoundingClientRect();
+  const ar = targetEl.getBoundingClientRect();
+
+  const x1 = sr.right - fr.left;
+  const y1 = (sr.top + sr.bottom) / 2 - fr.top;
+  const y2 = (ar.top + ar.bottom) / 2 - fr.top;
+  const x2 = ar.left - fr.left;
+  const xDrop = x1 + 16;
+  const r = 8;
+
+  const d = [
+    `M ${x1 + 6} ${y1}`,
+    `H ${xDrop - r}`,
+    `Q ${xDrop} ${y1} ${xDrop} ${y1 + r}`,
+    `V ${y2 - r}`,
+    `Q ${xDrop} ${y2} ${xDrop + r} ${y2}`,
+    `H ${x2 - 6}`,
+  ].join(" ");
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--border)");
+  path.setAttribute("stroke-width", "2");
+
+  svg.innerHTML = "";
+  svg.appendChild(path);
+
+  const len = path.getTotalLength();
+  path.style.strokeDasharray = len;
+  path.style.strokeDashoffset = len;
+  requestAnimationFrame(() => {
+    path.style.transition = "stroke-dashoffset 0.8s ease";
+    path.style.strokeDashoffset = "0";
+  });
+};
+
+const scheduleDrawCrossarm = (zone) => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const svg = zone.querySelector(".comparison-crossarm");
+    const flow = zone.querySelector(".comparison-flow");
+    if (!svg || !flow) return;
+
+    const variant = zone.dataset.variant;
+    if (variant === "sandbox") {
+      const selectedRow = flow.querySelector(".scenario-radio-row.selected");
+      const radio = selectedRow?.querySelector(".scenario-radio");
+      const alignedDecider = flow.querySelector("[data-comp-aligned-decider] .aligned-decider-node");
+      if (radio) drawCrossarm(svg, flow, selectedRow, alignedDecider);
+    } else {
+      const scenarioPanel = flow.querySelector("[data-comp-scenario] wa-details");
+      const alignedDecider = flow.querySelector("[data-comp-aligned-decider] .aligned-decider-node");
+      drawCrossarm(svg, flow, scenarioPanel, alignedDecider);
+    }
+  }));
+};
+
+const renderComparisonFlow = async (container, variant) => {
+  container.dataset.variant = variant;
+  const isSandbox = variant === "sandbox";
+
+  const scenario = getScenario(state.scenarioId);
+  const baseline = await decide(state.scenarioId, "baseline");
+  const aligned = await decide(state.scenarioId, "aligned", state.values);
+
+  const baselineLlm = baseline.llmBackbone?.split("/").pop() || "Language Model";
+  const adm = aligned.admName?.replace(/_/g, " ") || "Aligned Decider";
+  const displayAdm = {
+    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
+  }[aligned.admName] || adm;
+  const alignedLlm = aligned.llmBackbone?.split("/").pop() || "";
+
+  const scenarioColHtml = isSandbox
+    ? `<div class="sandbox-scenario-accordion" data-comp-sandbox-scenarios></div>`
+    : `<div class="flow-input-label">Scenario</div><div data-comp-scenario></div>`;
+
+  const valuesColHtml = isSandbox
+    ? `<wa-details class="values-accordion" open data-comp-sandbox-values>
+        <span slot="summary" class="values-presets" data-comp-sandbox-presets></span>
+        <div class="values-sliders" data-comp-sandbox-sliders></div>
+      </wa-details>
+      <div class="sandbox-values-stem"></div>`
+    : `<div class="flow-input-label">Value Profile</div>
+      <wa-details class="values-accordion" data-comp-values>
+        <span slot="summary" class="values-presets" data-comp-presets></span>
+        <div class="values-sliders" data-comp-sliders></div>
+      </wa-details>`;
+
+  const decisionsHtml = renderComparisonDecisions(container, aligned, baseline, scenario);
+
+  container.innerHTML = `
+    <div class="comparison-flow">
+      <div class="comparison-flow-inputs">
+        <div class="comparison-input-col">${scenarioColHtml}</div>
+        <div class="comparison-input-col">${valuesColHtml}</div>
+      </div>
+      <div class="comparison-connectors">
+        <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+        <div class="comparison-stem-cell"${isSandbox ? ' style="display:none"' : ""}><div class="comparison-stem"></div></div>
+      </div>
+      <svg class="comparison-crossarm" data-comp-crossarm></svg>
+      <div class="comparison-flow-deciders">
+        <div class="comparison-decider-cell" data-comp-baseline-decider>
+          <div class="decider-node">
+            <div class="decider-node-icon">&#x1F916;</div>
+            <div class="decider-node-text">
+              <div class="decider-label">Baseline Language Model</div>
+              <div class="decider-model-name">${baselineLlm}</div>
+            </div>
+          </div>
+        </div>
+        <div class="comparison-decider-cell" data-comp-aligned-decider>
+          <div class="aligned-decider-node">
+            <div class="decider-node-icon">&#x1F9ED;</div>
+            <div class="decider-node-text">
+              <div class="decider-label">Value-Aligned Decider</div>
+              <div class="decider-model-name">${displayAdm}${alignedLlm ? ` · ${alignedLlm}` : ""}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-flow-stems">
+        <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+        <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
+      </div>
+      <div class="comparison-flow-decisions" data-comp-decisions>${decisionsHtml}</div>
+    </div>
+  `;
+
+  if (isSandbox) {
+    buildSandboxScenarioAccordion(
+      container.querySelector("[data-comp-sandbox-scenarios]"),
+      SCENARIOS,
+      state.scenarioId,
+      handleSandboxScenarioChange,
+    );
+    buildPresetChips(container.querySelector("[data-comp-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
+    buildValueControls(container.querySelector("[data-comp-sandbox-sliders]"), state.values, handleSandboxValuesChange);
+    const sandboxValues = container.querySelector("[data-comp-sandbox-values]");
+    sandboxValues.addEventListener("wa-after-show", () => scheduleDrawCrossarm(container));
+    sandboxValues.addEventListener("wa-after-hide", () => scheduleDrawCrossarm(container));
+    container.querySelector("[data-comp-sandbox-scenarios]").addEventListener("wa-after-show", () => scheduleDrawCrossarm(container));
+    container.querySelector("[data-comp-sandbox-scenarios]").addEventListener("wa-after-hide", () => scheduleDrawCrossarm(container));
+  } else {
+    const compScenario = container.querySelector("[data-comp-scenario]");
+    renderComparisonScenario(compScenario, scenario);
+    buildPresetChips(container.querySelector("[data-comp-presets]"), state.presetId, handleComparisonPresetSelect);
+    buildValueControls(container.querySelector("[data-comp-sliders]"), state.values, handleComparisonValuesChange);
+    const compValues = container.querySelector("[data-comp-values]");
+    compValues.addEventListener("wa-after-show", () => scheduleDrawCrossarm(container));
+    compValues.addEventListener("wa-after-hide", () => scheduleDrawCrossarm(container));
+    compScenario.addEventListener("wa-after-show", () => scheduleDrawCrossarm(container));
+    compScenario.addEventListener("wa-after-hide", () => scheduleDrawCrossarm(container));
+  }
+
+  scheduleDrawCrossarm(container);
+};
+
+const renderComparisonScenario = (container, scenario) => {
   const descHtml = scenario.description
     .split("\n")
     .filter((p) => p.trim())
@@ -69,555 +458,6 @@ const renderBaselineScenario = (container, scenario) => {
       </div>
     </wa-details>
   `;
-};
-
-const renderBaselineCard = async (container) => {
-  const result = await decide(state.scenarioId, "baseline");
-  const scenario = getScenario(state.scenarioId);
-  renderBaselineScenario($("[data-baseline-scenario]"), scenario);
-  const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
-  const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + idx)}">${String.fromCharCode(65 + idx)}</span>` : "";
-  const openState = getDetailsOpenState(container);
-  const isOpen = openState?.[0] ? " open" : "";
-  container.innerHTML = `
-    <wa-details class="decision-panel"${isOpen}>
-      <span slot="summary" class="decision-panel-summary">
-        <span class="decision-panel-choice">${letterHTML}${result.decision}</span>
-        <span class="decision-panel-justification-preview">${result.justification}</span>
-      </span>
-      <div class="decision-rationale">${result.justification}</div>
-    </wa-details>
-  `;
-};
-
-const renderValuesScenario = (container, scenario) => {
-  const descHtml = scenario.description
-    .split("\n")
-    .filter((p) => p.trim())
-    .map((p) => `<p>${p}</p>`)
-    .join("");
-
-  const choicesHtml = scenario.choices
-    .map(
-      (c, i) =>
-        `<div class="scenario-choice-card"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
-    )
-    .join("");
-
-  container.innerHTML = `
-    <wa-details class="baseline-scenario-panel">
-      <span slot="summary" class="accordion-summary">${scenario.title}</span>
-      <div class="accordion-scenario-body">
-        <div class="accordion-scenario-description">${descHtml}</div>
-        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
-      </div>
-    </wa-details>
-  `;
-};
-
-const renderAlignedDecider = async (container) => {
-  const result = await decide(state.scenarioId, "aligned", state.values);
-  const adm = result.admName?.replace(/_/g, " ") || "Aligned Decider";
-  const displayAdm = {
-    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
-  }[result.admName] || adm;
-  const llm = result.llmBackbone?.split("/").pop() || "";
-  container.innerHTML = `
-    <div class="aligned-decider-node">
-      <div class="decider-node-icon">&#x1F9ED;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Value-Aligned Decider</div>
-        <div class="decider-model-name">${displayAdm}${llm ? ` · ${llm}` : ""}</div>
-      </div>
-    </div>
-  `;
-};
-
-const renderAlignedDecision = async (container) => {
-  const result = await decide(state.scenarioId, "aligned", state.values);
-  const scenario = getScenario(state.scenarioId);
-  const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
-  const letterHTML = idx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + idx)}">${String.fromCharCode(65 + idx)}</span>` : "";
-  const wasOpen = container.querySelector(".decision-panel")?.open;
-  container.innerHTML = `
-    <wa-details class="decision-panel"${wasOpen ? " open" : ""}>
-      <span slot="summary" class="decision-panel-summary">
-        <span class="decision-panel-choice">${letterHTML}${result.decision}</span>
-        <span class="decision-panel-justification-preview">${result.justification}</span>
-      </span>
-      <div class="decision-rationale">${result.justification}</div>
-    </wa-details>
-  `;
-};
-
-const renderComparisonScenario = (container, scenario) => {
-  const descHtml = scenario.description
-    .split("\n")
-    .filter((p) => p.trim())
-    .map((p) => `<p>${p}</p>`)
-    .join("");
-
-  const choicesHtml = scenario.choices
-    .map(
-      (c, i) =>
-        `<div class="scenario-choice-card"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
-    )
-    .join("");
-
-  container.innerHTML = `
-    <wa-details class="baseline-scenario-panel">
-      <span slot="summary" class="accordion-summary">${scenario.title}</span>
-      <div class="accordion-scenario-body">
-        <div class="accordion-scenario-description">${descHtml}</div>
-        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
-      </div>
-    </wa-details>
-  `;
-};
-
-const renderComparisonDeciders = async () => {
-  const baseline = await decide(state.scenarioId, "baseline");
-  const aligned = await decide(state.scenarioId, "aligned", state.values);
-
-  const baselineLlm = baseline.llmBackbone?.split("/").pop() || "Language Model";
-  $("[data-comparison-baseline-decider]").innerHTML = `
-    <div class="decider-node">
-      <div class="decider-node-icon">&#x1F916;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Baseline Language Model</div>
-        <div class="decider-model-name">${baselineLlm}</div>
-      </div>
-    </div>
-  `;
-
-  const adm = aligned.admName?.replace(/_/g, " ") || "Aligned Decider";
-  const displayAdm = {
-    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
-  }[aligned.admName] || adm;
-  const alignedLlm = aligned.llmBackbone?.split("/").pop() || "";
-  $("[data-comparison-aligned-decider]").innerHTML = `
-    <div class="aligned-decider-node">
-      <div class="decider-node-icon">&#x1F9ED;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Value-Aligned Decider</div>
-        <div class="decider-model-name">${displayAdm}${alignedLlm ? ` · ${alignedLlm}` : ""}</div>
-      </div>
-    </div>
-  `;
-};
-
-const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
-  const changed = baseline.choiceId !== aligned.choiceId;
-  const openState = getDetailsOpenState(container);
-  const alignedOpen = openState?.[0] ? " open" : "";
-  const baselineOpen = openState?.[1] ? " open" : "";
-
-  const alignedIdx = scenario.choices.findIndex((c) => c.id === aligned.choiceId);
-  const alignedLetter = alignedIdx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + alignedIdx)}">${String.fromCharCode(65 + alignedIdx)}</span>` : "";
-  const baselineIdx = scenario.choices.findIndex((c) => c.id === baseline.choiceId);
-  const baselineLetter = baselineIdx >= 0 ? `<span class="choice-letter decision-choice-letter choice-${String.fromCharCode(97 + baselineIdx)}">${String.fromCharCode(65 + baselineIdx)}</span>` : "";
-
-  container.innerHTML = `
-    <div class="decision-comparison">
-      <div class="decision-col">
-        <wa-details class="decision-panel"${baselineOpen}>
-          <span slot="summary" class="decision-panel-summary">
-            <span class="decision-panel-choice">${baselineLetter}${baseline.decision}</span>
-            <span class="decision-panel-justification-preview">${baseline.justification}</span>
-          </span>
-          <div class="decision-rationale">${baseline.justification}</div>
-        </wa-details>
-      </div>
-      <div class="decision-col">
-        <wa-details class="decision-panel"${alignedOpen}>
-          <span slot="summary" class="decision-panel-summary">
-            <span class="decision-panel-choice">${alignedLetter}${aligned.decision}</span>
-            <span class="decision-panel-justification-preview">${aligned.justification}</span>
-          </span>
-          <div class="decision-rationale">${aligned.justification}</div>
-        </wa-details>
-      </div>
-    </div>
-  `;
-};
-
-const drawComparisonCrossarm = () => {
-  const svg = $("[data-comparison-crossarm]");
-  const flow = svg.closest(".comparison-flow");
-  const scenarioPanel = flow.querySelector("[data-comparison-scenario] wa-details");
-  const alignedDecider = flow.querySelector("[data-comparison-aligned-decider] .aligned-decider-node");
-  if (!scenarioPanel || !alignedDecider) return;
-
-  const fr = flow.getBoundingClientRect();
-  const sr = scenarioPanel.getBoundingClientRect();
-  const ar = alignedDecider.getBoundingClientRect();
-
-  const x1 = sr.right - fr.left;
-  const y1 = (sr.top + sr.bottom) / 2 - fr.top;
-  const y2 = (ar.top + ar.bottom) / 2 - fr.top;
-  const x2 = ar.left - fr.left;
-  const xDrop = x1 + 16;
-  const r = 8;
-
-  const d = [
-    `M ${x1 + 6} ${y1}`,
-    `H ${xDrop - r}`,
-    `Q ${xDrop} ${y1} ${xDrop} ${y1 + r}`,
-    `V ${y2 - r}`,
-    `Q ${xDrop} ${y2} ${xDrop + r} ${y2}`,
-    `H ${x2 - 6}`,
-  ].join(" ");
-  svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--border)" stroke-width="2" />`;
-};
-
-const scheduleDrawCrossarm = () => {
-  requestAnimationFrame(() => requestAnimationFrame(drawComparisonCrossarm));
-};
-
-const renderComparison = async () => {
-  const scenario = getScenario(state.scenarioId);
-  renderComparisonScenario($("[data-comparison-scenario]"), scenario);
-  await renderComparisonDeciders();
-  const baseline = await decide(state.scenarioId, "baseline");
-  const aligned = await decide(state.scenarioId, "aligned", state.values);
-  renderComparisonDecisions($("[data-comparison-decisions]"), aligned, baseline, scenario);
-  scheduleDrawCrossarm();
-};
-
-const updateValuesFlow = async () => {
-  renderValuesScenario($("[data-values-scenario]"), getScenario(state.scenarioId));
-  await renderAlignedDecider($("[data-aligned-decider]"));
-  await renderAlignedDecision($("[data-aligned-decision]"));
-};
-
-const handleScenarioChange = async (id) => {
-  state.scenarioId = id;
-  await renderDeciderCard($("[data-decider-card]"));
-  await renderBaselineCard($("[data-baseline-card]"));
-  await updateValuesFlow();
-  await renderComparison();
-};
-
-const syncAllValueControls = () => {
-  buildPresetChips($("[data-simple-presets]"), state.presetId, handleSimplePresetSelect);
-  setSliderValues($("[data-simple-sliders]"), state.values);
-  buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
-  setSliderValues($("[data-values-sliders]"), state.values);
-  buildPresetChips($("[data-comparison-presets]"), state.presetId, handleComparisonPresetSelect);
-  setSliderValues($("[data-comparison-sliders]"), state.values);
-  buildPresetChips($("[data-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
-  setSliderValues($("[data-sandbox-sliders]"), state.values);
-};
-
-const handlePresetSelect = async (presetId) => {
-  state.presetId = presetId;
-  const preset = getPreset(presetId);
-  state.values = { ...preset.values };
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-};
-
-const handleValuesChange = async (newValues) => {
-  state.values = newValues;
-  state.presetId = null;
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-};
-
-const handleSimplePresetSelect = async (presetId) => {
-  state.presetId = presetId;
-  const preset = getPreset(presetId);
-  state.values = { ...preset.values };
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-};
-
-const handleSimpleValuesChange = async (newValues) => {
-  state.values = newValues;
-  state.presetId = null;
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-};
-
-const handleComparisonPresetSelect = async (presetId) => {
-  state.presetId = presetId;
-  const preset = getPreset(presetId);
-  state.values = { ...preset.values };
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-  await renderSandbox();
-};
-
-const handleComparisonValuesChange = async (newValues) => {
-  state.values = newValues;
-  state.presetId = null;
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-  await renderSandbox();
-};
-
-const drawSandboxCrossarm = () => {
-  const svg = $("[data-sandbox-crossarm]");
-  const flow = svg.closest(".comparison-flow");
-  const selectedRow = flow.querySelector(".scenario-radio-row.selected");
-  const radio = selectedRow?.querySelector(".scenario-radio");
-  const alignedDecider = flow.querySelector("[data-sandbox-aligned-decider] .aligned-decider-node");
-  if (!radio || !alignedDecider) return;
-
-  const fr = flow.getBoundingClientRect();
-  const sr = selectedRow.getBoundingClientRect();
-  const rr = radio.getBoundingClientRect();
-  const ar = alignedDecider.getBoundingClientRect();
-
-  const x1 = sr.right - fr.left;
-  const y1 = (rr.top + rr.bottom) / 2 - fr.top;
-  const y2 = (ar.top + ar.bottom) / 2 - fr.top;
-  const x2 = ar.left - fr.left;
-  const xDrop = x1 + 16;
-  const r = 8;
-
-  const d = [
-    `M ${x1 + 6} ${y1}`,
-    `H ${xDrop - r}`,
-    `Q ${xDrop} ${y1} ${xDrop} ${y1 + r}`,
-    `V ${y2 - r}`,
-    `Q ${xDrop} ${y2} ${xDrop + r} ${y2}`,
-    `H ${x2 - 6}`,
-  ].join(" ");
-  svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--border)" stroke-width="2" />`;
-};
-
-const scheduleDrawSandboxCrossarm = () => {
-  requestAnimationFrame(() => requestAnimationFrame(drawSandboxCrossarm));
-};
-
-const renderSandboxDeciders = async () => {
-  const baseline = await decide(state.scenarioId, "baseline");
-  const aligned = await decide(state.scenarioId, "aligned", state.values);
-
-  const baselineLlm = baseline.llmBackbone?.split("/").pop() || "Language Model";
-  $("[data-sandbox-baseline-decider]").innerHTML = `
-    <div class="decider-node">
-      <div class="decider-node-icon">&#x1F916;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Baseline Language Model</div>
-        <div class="decider-model-name">${baselineLlm}</div>
-      </div>
-    </div>
-  `;
-
-  const adm = aligned.admName?.replace(/_/g, " ") || "Aligned Decider";
-  const displayAdm = {
-    phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
-  }[aligned.admName] || adm;
-  const alignedLlm = aligned.llmBackbone?.split("/").pop() || "";
-  $("[data-sandbox-aligned-decider]").innerHTML = `
-    <div class="aligned-decider-node">
-      <div class="decider-node-icon">&#x1F9ED;</div>
-      <div class="decider-node-text">
-        <div class="decider-label">Value-Aligned Decider</div>
-        <div class="decider-model-name">${displayAdm}${alignedLlm ? ` · ${alignedLlm}` : ""}</div>
-      </div>
-    </div>
-  `;
-};
-
-const renderSandbox = async () => {
-  await renderSandboxDeciders();
-  const container = $("[data-sandbox-results]");
-  const openState = getDetailsOpenState(container);
-  const baseline = await decide(state.scenarioId, "baseline");
-  const aligned = await decide(state.scenarioId, "aligned", state.values);
-  const scenario = getScenario(state.scenarioId);
-  renderComparisonDecisions(container, aligned, baseline, scenario);
-  scheduleDrawSandboxCrossarm();
-};
-
-const handleSandboxScenarioChange = async (id) => {
-  state.scenarioId = id;
-  buildScenarioAccordion(
-    $("[data-scenario-accordion]"),
-    SCENARIOS,
-    state.scenarioId,
-    handleScenarioChange,
-    { showKdmaTag: false },
-  );
-  await renderDeciderCard($("[data-decider-card]"));
-  await renderBaselineCard($("[data-baseline-card]"));
-  await updateValuesFlow();
-  await renderComparison();
-  await renderSandbox();
-  scheduleDrawSandboxCrossarm();
-};
-
-const handleSandboxPresetSelect = async (presetId) => {
-  state.presetId = presetId;
-  const preset = getPreset(presetId);
-  state.values = { ...preset.values };
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-  await renderSandbox();
-};
-
-const handleSandboxValuesChange = async (newValues) => {
-  state.values = newValues;
-  state.presetId = null;
-  syncAllValueControls();
-  await updateValuesFlow();
-  await renderComparison();
-  await renderSandbox();
-};
-
-const applyStaggerToSliders = (container) => {
-  const rows = [...container.querySelectorAll(".slider-row")];
-  rows.forEach((row, i) => {
-    row.classList.add("slider-row-reveal");
-    row.style.transitionDelay = `${i * 0.15}s`;
-  });
-  requestAnimationFrame(() => {
-    rows.forEach((row) => row.classList.add("visible"));
-  });
-};
-
-const revealSection = async (sectionName) => {
-  if (state.revealed.has(sectionName)) return;
-  state.revealed.add(sectionName);
-
-  const section = $(`[data-section="${sectionName}"]`);
-  const revealEls = [...section.querySelectorAll(".reveal")];
-  revealEls.forEach((el) => el.classList.add("visible"));
-
-  if (sectionName === "baseline" && !state.baselineShown) {
-    state.baselineShown = true;
-    await renderBaselineCard($("[data-baseline-card]"));
-  }
-
-  if (sectionName === "values") {
-    applyStaggerToSliders($("[data-simple-sliders]"));
-  }
-
-  if (sectionName === "alignment") {
-    applyStaggerToSliders($("[data-values-sliders]"));
-  }
-};
-
-const setupRevealElements = () => {
-  $$("[data-section]").forEach((section) => {
-    const sectionName = section.dataset.section;
-    if (sectionName === "sandbox") return;
-
-    const inner = section.querySelector(".section-inner");
-    [...inner.children].forEach((child) => child.classList.add("reveal"));
-  });
-};
-
-const setupRevealObserver = () => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        revealSection(entry.target.dataset.section);
-      });
-    },
-    { threshold: 0.3 },
-  );
-
-  $$("[data-section]").forEach((section) => {
-    if (section.dataset.section === "sandbox") return;
-    observer.observe(section);
-  });
-};
-
-const setupTocObserver = () => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const name = entry.target.dataset.section;
-        $$(".toc-pill").forEach((pill) => {
-          pill.classList.toggle("active", pill.dataset.toc === name);
-        });
-      });
-    },
-    { rootMargin: "-50% 0px -50% 0px" },
-  );
-
-  $$("[data-section]").forEach((section) => observer.observe(section));
-};
-
-const CHEVRON_SVG = `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
-
-const setupNextButtons = () => {
-  const sections = $$("[data-section]");
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const btn = entry.target.querySelector(".section-next");
-        if (btn) btn.classList.toggle("hidden", !entry.isIntersecting);
-      });
-    },
-    { threshold: 0.5 },
-  );
-
-  sections.forEach((section, i) => {
-    if (i === sections.length - 1) return;
-    const nextSection = sections[i + 1];
-    const btn = document.createElement("button");
-    btn.className = "section-next";
-    btn.innerHTML = `<span class="section-next-label">Next</span><span class="section-next-chevron">${CHEVRON_SVG}</span>`;
-    btn.addEventListener("click", () => {
-      nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    section.appendChild(btn);
-    observer.observe(section);
-  });
-};
-
-const setupTocClicks = () => {
-  $$(".toc-pill").forEach((pill) => {
-    pill.addEventListener("click", () => {
-      const target = $(`[data-section="${pill.dataset.toc}"]`);
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
-};
-
-const initScenario = () => {
-  buildScenarioAccordion(
-    $("[data-scenario-accordion]"),
-    SCENARIOS,
-    state.scenarioId,
-    handleScenarioChange,
-    { showKdmaTag: false },
-  );
-};
-
-const initSimpleValues = () => {
-  buildPresetChips($("[data-simple-presets]"), state.presetId, handleSimplePresetSelect);
-  buildValueControls($("[data-simple-sliders]"), state.values, handleSimpleValuesChange);
-};
-
-const initAlignment = async () => {
-  buildPresetChips($("[data-values-presets]"), state.presetId, handlePresetSelect);
-  buildValueControls($("[data-values-sliders]"), state.values, handleValuesChange);
-  await updateValuesFlow();
-};
-
-const initComparison = async () => {
-  buildPresetChips($("[data-comparison-presets]"), state.presetId, handleComparisonPresetSelect);
-  buildValueControls($("[data-comparison-sliders]"), state.values, handleComparisonValuesChange);
-  $("[data-comparison-values]").addEventListener("wa-after-show", drawComparisonCrossarm);
-  $("[data-comparison-values]").addEventListener("wa-after-hide", drawComparisonCrossarm);
-  $("[data-comparison-scenario]").addEventListener("wa-after-show", scheduleDrawCrossarm);
-  $("[data-comparison-scenario]").addEventListener("wa-after-hide", scheduleDrawCrossarm);
-  await renderComparison();
 };
 
 const buildSandboxScenarioAccordion = (container, scenarios, currentId, onSelect) => {
@@ -673,39 +513,239 @@ const buildSandboxScenarioAccordion = (container, scenarios, currentId, onSelect
   });
 };
 
-const initSandbox = async () => {
-  buildSandboxScenarioAccordion(
-    $("[data-sandbox-scenarios]"),
-    SCENARIOS,
-    state.scenarioId,
-    handleSandboxScenarioChange,
-  );
-  buildPresetChips($("[data-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
-  buildValueControls($("[data-sandbox-sliders]"), state.values, handleSandboxValuesChange);
-  $("[data-sandbox-values]").addEventListener("wa-after-show", drawSandboxCrossarm);
-  $("[data-sandbox-values]").addEventListener("wa-after-hide", drawSandboxCrossarm);
-  $("[data-sandbox-scenarios]").addEventListener("wa-after-show", scheduleDrawSandboxCrossarm);
-  $("[data-sandbox-scenarios]").addEventListener("wa-after-hide", scheduleDrawSandboxCrossarm);
-  await renderSandbox();
+const refreshComparisonZone = async () => {
+  const zone = $('[data-zone="comparison"]');
+  if (!zone.classList.contains("visible")) return;
+  await renderComparisonFlow(zone, zone.dataset.variant);
+};
+
+const syncAllValueControls = () => {
+  const simplePresets = $("[data-simple-presets]");
+  const simpleSliders = $("[data-simple-sliders]");
+  if (simplePresets) buildPresetChips(simplePresets, state.presetId, handleSimplePresetSelect);
+  if (simpleSliders) setSliderValues(simpleSliders, state.values);
+
+  const valuesPresets = $("[data-values-presets]");
+  const valuesSliders = $("[data-values-sliders]");
+  if (valuesPresets) buildPresetChips(valuesPresets, state.presetId, handlePresetSelect);
+  if (valuesSliders) setSliderValues(valuesSliders, state.values);
+
+  const compPresets = $("[data-comp-presets]");
+  const compSliders = $("[data-comp-sliders]");
+  if (compPresets) buildPresetChips(compPresets, state.presetId, handleComparisonPresetSelect);
+  if (compSliders) setSliderValues(compSliders, state.values);
+
+  const sandboxPresets = $("[data-comp-sandbox-presets]");
+  const sandboxSliders = $("[data-comp-sandbox-sliders]");
+  if (sandboxPresets) buildPresetChips(sandboxPresets, state.presetId, handleSandboxPresetSelect);
+  if (sandboxSliders) setSliderValues(sandboxSliders, state.values);
+};
+
+const handleScenarioChange = async (id) => {
+  state.scenarioId = id;
+};
+
+const handleSimplePresetSelect = async (presetId) => {
+  state.presetId = presetId;
+  state.values = { ...getPreset(presetId).values };
+  syncAllValueControls();
+};
+
+const handleSimpleValuesChange = async (newValues) => {
+  state.values = newValues;
+  state.presetId = null;
+  syncAllValueControls();
+};
+
+const handlePresetSelect = async (presetId) => {
+  state.presetId = presetId;
+  state.values = { ...getPreset(presetId).values };
+  syncAllValueControls();
+  await renderAlignedDecider($('[data-zone="decider-aligned"]'));
+  await renderAlignedDecision($('[data-zone="decision-aligned"]'));
+};
+
+const handleValuesChange = async (newValues) => {
+  state.values = newValues;
+  state.presetId = null;
+  syncAllValueControls();
+  await renderAlignedDecider($('[data-zone="decider-aligned"]'));
+  await renderAlignedDecision($('[data-zone="decision-aligned"]'));
+};
+
+const handleComparisonPresetSelect = async (presetId) => {
+  state.presetId = presetId;
+  state.values = { ...getPreset(presetId).values };
+  syncAllValueControls();
+  await refreshComparisonZone();
+};
+
+const handleComparisonValuesChange = async (newValues) => {
+  state.values = newValues;
+  state.presetId = null;
+  syncAllValueControls();
+  await refreshComparisonZone();
+};
+
+const handleSandboxScenarioChange = async (id) => {
+  state.scenarioId = id;
+  await refreshComparisonZone();
+};
+
+const handleSandboxPresetSelect = async (presetId) => {
+  state.presetId = presetId;
+  state.values = { ...getPreset(presetId).values };
+  syncAllValueControls();
+  await refreshComparisonZone();
+};
+
+const handleSandboxValuesChange = async (newValues) => {
+  state.values = newValues;
+  state.presetId = null;
+  syncAllValueControls();
+  await refreshComparisonZone();
+};
+
+const renderZone = async (zoneId, variant) => {
+  const zone = $(`[data-zone="${zoneId}"]`);
+  switch (zoneId) {
+    case "scenario":
+      if (variant === "accordion") renderScenarioAccordion(zone);
+      else renderScenarioSummary(zone, { showLabel: variant === "summary-labeled" });
+      break;
+    case "decider-baseline":
+      await renderDeciderBaseline(zone);
+      break;
+    case "decision-baseline":
+      await renderDecisionBaseline(zone);
+      break;
+    case "values":
+      if (variant === "with-decider") renderValuesWithDecider(zone);
+      else renderValuesAccordion(zone);
+      break;
+    case "connectors":
+      renderConnectors(zone);
+      break;
+    case "decider-aligned":
+      await renderAlignedDecider(zone);
+      break;
+    case "decision-aligned":
+      await renderAlignedDecision(zone);
+      break;
+    case "comparison":
+      await renderComparisonFlow(zone, variant);
+      break;
+    case "learn-more":
+      break;
+  }
+};
+
+const goToStep = async (index) => {
+  if (index < 0 || index >= STEPS.length || index === state.step) return;
+
+  const forward = index > state.step;
+  const isInitial = state.step < 0;
+  const prevStep = state.step >= 0 ? STEPS[state.step] : { zones: {} };
+  const nextStep = STEPS[index];
+
+  const prevZones = new Set(Object.keys(prevStep.zones));
+  const nextZones = new Set(Object.keys(nextStep.zones));
+
+  const leaving = [...prevZones].filter((z) => !nextZones.has(z));
+  const entering = [...nextZones].filter((z) => !prevZones.has(z));
+  const staying = [...nextZones].filter((z) => prevZones.has(z));
+
+  state.step = index;
+
+  const applyChanges = async () => {
+    $(".guide-viewport").dataset.step = index;
+    $("[data-step-heading]").textContent = nextStep.heading;
+    $("[data-step-subtitle]").textContent = nextStep.subtitle;
+    $("[data-prev]").hidden = index === 0;
+    $("[data-next]").hidden = index === STEPS.length - 1;
+
+    $$(".toc-pill").forEach((pill) => {
+      pill.classList.toggle("active", pill.dataset.toc === nextStep.id);
+    });
+
+    leaving.forEach((zoneId) => {
+      $(`[data-zone="${zoneId}"]`).classList.remove("visible");
+    });
+
+    entering.forEach((zoneId) => {
+      $(`[data-zone="${zoneId}"]`).classList.add("visible");
+    });
+
+    const renderPromises = [];
+    entering.forEach((zoneId) => {
+      renderPromises.push(renderZone(zoneId, nextStep.zones[zoneId]));
+    });
+    staying.forEach((zoneId) => {
+      if (prevStep.zones[zoneId] !== nextStep.zones[zoneId]) {
+        renderPromises.push(renderZone(zoneId, nextStep.zones[zoneId]));
+      }
+    });
+    await Promise.all(renderPromises);
+  };
+
+  if (!isInitial && document.startViewTransition) {
+    staying.forEach((zoneId) => {
+      $(`[data-zone="${zoneId}"]`).style.viewTransitionName = `zone-${zoneId}`;
+    });
+
+    document.documentElement.classList.toggle("backward", !forward);
+    const transition = document.startViewTransition(() => applyChanges());
+    await transition.finished;
+
+    staying.forEach((zoneId) => {
+      $(`[data-zone="${zoneId}"]`).style.viewTransitionName = "";
+    });
+    document.documentElement.classList.remove("backward");
+  } else {
+    await applyChanges();
+  }
+
+  const compZone = $('[data-zone="comparison"]');
+  if (compZone.classList.contains("visible")) scheduleDrawCrossarm(compZone);
+};
+
+const setupNav = () => {
+  $("[data-prev]").addEventListener("click", () => goToStep(state.step - 1));
+  $("[data-next]").addEventListener("click", () => goToStep(state.step + 1));
+
+  $$(".toc-pill").forEach((pill, i) => {
+    pill.addEventListener("click", () => goToStep(i));
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      goToStep(state.step + 1);
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      goToStep(state.step - 1);
+    }
+  });
+
+  let wheelCooldown = false;
+  $(".guide-viewport").addEventListener("wheel", (e) => {
+    if (wheelCooldown) return;
+    const threshold = 30;
+    if (Math.abs(e.deltaY) < threshold) return;
+    wheelCooldown = true;
+    setTimeout(() => { wheelCooldown = false; }, 600);
+    goToStep(state.step + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
 };
 
 const init = async () => {
-  initScenario();
-  await renderDeciderCard($("[data-decider-card]"));
-  await renderBaselineCard($("[data-baseline-card]"));
-  initSimpleValues();
-  await initAlignment();
-  await initComparison();
-  await initSandbox();
-  setupNextButtons();
-  setupRevealElements();
-  setupRevealObserver();
-  setupTocObserver();
-  setupTocClicks();
+  setupNav();
   window.addEventListener("resize", () => {
-    drawComparisonCrossarm();
-    drawSandboxCrossarm();
+    const zone = $('[data-zone="comparison"]');
+    if (zone.classList.contains("visible")) scheduleDrawCrossarm(zone);
   });
+  goToStep(0);
 };
 
 ready.then(() => {

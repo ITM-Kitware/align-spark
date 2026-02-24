@@ -43,161 +43,21 @@
         </div>
       </aside>
 
-      <main class="guide-content">
-        <section class="guide-section" data-section="scenario">
-          <div class="section-inner">
-            <h2 class="section-heading">Hard Choices</h2>
-            <p class="section-subtitle">Some decisions have no right answer — only trade-offs shaped by what you value most.</p>
-            <div class="scenario-accordion-container" data-scenario-accordion></div>
+      <main class="guide-viewport" data-step="0">
+        <div class="step-content">
+          <div class="step-header">
+            <h2 class="section-heading" data-step-heading></h2>
+            <p class="section-subtitle" data-step-subtitle></p>
           </div>
-        </section>
-
-        <section class="guide-section" data-section="baseline">
-          <div class="section-inner">
-            <h2 class="section-heading">Scenario In, Decision Out</h2>
-            <p class="section-subtitle">Without value guidance, the AI just picks what seems best from the scenario.</p>
-            <div data-baseline-scenario></div>
-            <div class="decider-card" data-decider-card></div>
-            <div class="baseline-card" data-baseline-card></div>
-          </div>
-        </section>
-
-        <section class="guide-section" data-section="values">
-          <div class="section-inner">
-            <h2 class="section-heading">Values are Priorities</h2>
-            <p class="section-subtitle">When there's no right answer, the best choice depends on what you value most.</p>
-            <div class="values-centered-flow">
-              <wa-details class="values-accordion" open>
-                <span slot="summary" class="values-presets" data-simple-presets></span>
-                <div class="values-sliders" data-simple-sliders></div>
-              </wa-details>
-              <div class="values-adm-stem"></div>
-              <div class="aligned-decider-node">
-                <div class="decider-node-icon">&#x1F9ED;</div>
-                <div class="decider-node-text">
-                  <div class="decider-label">Value-Aligned Decider</div>
-                  <div class="decider-model-name">Alignment Algorithm</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="guide-section" data-section="alignment">
-          <div class="section-inner">
-            <h2 class="section-heading">Value-Aligned AI</h2>
-            <p class="section-subtitle">Now the decision maker considers your values alongside the scenario — not just the facts.</p>
-            <div class="values-flow">
-              <div class="values-flow-inputs">
-                <div class="values-flow-left">
-                  <div class="flow-input-label">Scenario</div>
-                  <div data-values-scenario></div>
-                </div>
-                <div class="values-flow-right">
-                  <div class="flow-input-label">Value Profile</div>
-                  <wa-details class="values-accordion">
-                    <span slot="summary" class="values-presets" data-values-presets></span>
-                    <div class="values-sliders" data-values-sliders></div>
-                  </wa-details>
-                </div>
-              </div>
-              <div class="values-flow-connector">
-                <div class="connector-lines">
-                  <div class="connector-arm connector-arm-left"></div>
-                  <div class="connector-arm connector-arm-right"></div>
-                </div>
-                <div class="connector-stem"></div>
-              </div>
-              <div class="aligned-decider-card" data-aligned-decider></div>
-              <div class="aligned-decision-stem"></div>
-              <div class="aligned-decision-card" data-aligned-decision></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="guide-section" data-section="comparison">
-          <div class="section-inner">
-            <h2 class="section-heading">Side by Side</h2>
-            <p class="section-subtitle">See how values change the outcome.</p>
-            <div class="comparison-flow">
-              <div class="comparison-flow-inputs">
-                <div class="comparison-input-col">
-                  <div class="flow-input-label">Scenario</div>
-                  <div data-comparison-scenario></div>
-                </div>
-                <div class="comparison-input-col">
-                  <div class="flow-input-label">Value Profile</div>
-                  <wa-details class="values-accordion" data-comparison-values>
-                    <span slot="summary" class="values-presets" data-comparison-presets></span>
-                    <div class="values-sliders" data-comparison-sliders></div>
-                  </wa-details>
-                </div>
-              </div>
-
-              <div class="comparison-connectors">
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-              </div>
-              <svg class="comparison-crossarm" data-comparison-crossarm></svg>
-
-              <div class="comparison-flow-deciders">
-                <div class="comparison-decider-cell" data-comparison-baseline-decider></div>
-                <div class="comparison-decider-cell" data-comparison-aligned-decider></div>
-              </div>
-
-              <div class="comparison-flow-stems">
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-              </div>
-
-              <div class="comparison-flow-decisions" data-comparison-decisions></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="guide-section" data-section="sandbox">
-          <div class="section-inner">
-            <h2 class="section-heading">Explore</h2>
-            <p class="section-subtitle">Change scenarios and values to see decisions update in real time.</p>
-            <div class="comparison-flow">
-              <div class="comparison-flow-inputs">
-                <div class="comparison-input-col">
-                  <div class="sandbox-scenario-accordion" data-sandbox-scenarios></div>
-                </div>
-                <div class="comparison-input-col">
-                  <wa-details class="values-accordion" open data-sandbox-values>
-                    <span slot="summary" class="values-presets" data-sandbox-presets></span>
-                    <div class="values-sliders" data-sandbox-sliders></div>
-                  </wa-details>
-                  <div class="sandbox-values-stem"></div>
-                </div>
-              </div>
-
-              <div class="comparison-connectors">
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-              </div>
-              <svg class="comparison-crossarm" data-sandbox-crossarm></svg>
-
-              <div class="comparison-flow-deciders">
-                <div class="comparison-decider-cell" data-sandbox-baseline-decider></div>
-                <div class="comparison-decider-cell" data-sandbox-aligned-decider></div>
-              </div>
-
-              <div class="comparison-flow-stems">
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-                <div class="comparison-stem-cell"><div class="comparison-stem"></div></div>
-              </div>
-
-              <div class="comparison-flow-decisions" data-sandbox-results></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="guide-section" data-section="learn-more">
-          <div class="section-inner">
-            <h2 class="section-heading">Learn More</h2>
-            <p class="section-subtitle">Explore the research and try the full interactive system.</p>
+          <div class="zone zone-scenario" data-zone="scenario"></div>
+          <div class="zone zone-decider-baseline" data-zone="decider-baseline"></div>
+          <div class="zone zone-decision-baseline" data-zone="decision-baseline"></div>
+          <div class="zone zone-values" data-zone="values"></div>
+          <div class="zone zone-decider-aligned" data-zone="decider-aligned"></div>
+          <div class="zone zone-connectors" data-zone="connectors"></div>
+          <div class="zone zone-decision-aligned" data-zone="decision-aligned"></div>
+          <div class="zone zone-comparison" data-zone="comparison"></div>
+          <div class="zone zone-learn-more" data-zone="learn-more">
             <div class="learn-more-links">
               <a href="https://arxiv.org/abs/2507.09037" target="_blank" rel="noopener" class="learn-more-card">
                 <span class="learn-more-icon">&#x1F4C4;</span>
@@ -222,7 +82,12 @@
               </a>
             </div>
           </div>
-        </section>
+        </div>
+
+        <div class="step-nav">
+          <button class="step-btn step-btn-back" data-prev>Back</button>
+          <button class="step-btn step-btn-next" data-next>Next</button>
+        </div>
       </main>
     </div>
 
