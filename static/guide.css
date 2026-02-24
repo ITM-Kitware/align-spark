@@ -312,9 +312,9 @@ body {
 }
 
 .crossarm-overlay {
+  display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
 }
 
 .crossarm-overlay path {
@@ -325,10 +325,6 @@ body {
   from { opacity: 0; }
 }
 
-.guide-viewport[data-step="5"] .step-content {
-  align-content: start;
-  overflow: hidden;
-}
 
 .guide-viewport[data-step="6"] .step-content {
   display: flex;
