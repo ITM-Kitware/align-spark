@@ -32,8 +32,8 @@ const STEPS = [
   },
   {
     id: "baseline",
-    heading: "Scenario In, Decision Out",
-    subtitle: "Without value guidance, the AI just picks what seems best from the scenario.",
+    heading: "Hidden Bias",
+    subtitle: "When we ask the AI to make a decision, the choice reflects the biases baked into its training — not your priorities.",
     zones: { scenario: "summary", "decider-baseline": true, "decision-baseline": true },
   },
   {
