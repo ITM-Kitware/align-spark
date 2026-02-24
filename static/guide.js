@@ -39,13 +39,13 @@ const STEPS = [
   {
     id: "values",
     heading: "Values are Priorities",
-    subtitle: "When there's no right answer, the best choice depends on what you value most.",
+    subtitle: "Values resolve trade-offs in tough scenarios. Set yours and the decision maker will weigh them in its decision.",
     zones: { values: "with-decider" },
   },
   {
     id: "alignment",
-    heading: "Value-Aligned AI",
-    subtitle: "Now the decision maker considers your values alongside the scenario — not just the facts.",
+    heading: "Value Aligned AI",
+    subtitle: "Now the decision maker uses your values alongside the scenario — aligning its choice to your priorities.",
     zones: { scenario: "summary-labeled", values: "accordion", connectors: true, "decider-aligned": true, "decision-aligned": true },
   },
   {
@@ -172,7 +172,7 @@ const renderValuesWithDecider = (container) => {
       <div class="aligned-decider-node">
         <div class="decider-node-icon">&#x1F9ED;</div>
         <div class="decider-node-text">
-          <div class="decider-label">Value-Aligned Decider</div>
+          <div class="decider-label">Value Aligned Decider</div>
           <div class="decider-model-name">Alignment Algorithm</div>
         </div>
       </div>
@@ -234,7 +234,7 @@ const renderAlignedDecider = async (container) => {
       <div class="aligned-decider-node">
         <div class="decider-node-icon">&#x1F9ED;</div>
         <div class="decider-node-text">
-          <div class="decider-label">Value-Aligned Decider</div>
+          <div class="decider-label">Value Aligned Decider</div>
           <div class="decider-model-name">${displayAdm}${llm ? ` · ${llm}` : ""}</div>
         </div>
       </div>
@@ -434,7 +434,7 @@ const renderComparisonFlow = async (container, variant) => {
           <div class="aligned-decider-node">
             <div class="decider-node-icon">&#x1F9ED;</div>
             <div class="decider-node-text">
-              <div class="decider-label">Value-Aligned Decider</div>
+              <div class="decider-label">Value Aligned Decider</div>
               <div class="decider-model-name">${displayAdm}${alignedLlm ? ` · ${alignedLlm}` : ""}</div>
             </div>
           </div>
