@@ -120,22 +120,12 @@ export function buildScenarioAccordion(container, scenarios, currentId, onSelect
     const dim = DIMENSIONS.find((d) => d.id === scenario.kdmaType);
     const kdmaLabel = dim ? dim.label : "";
 
-    const descHtml = scenario.description
-      .split("\n")
-      .filter((p) => p.trim())
-      .map((p) => `<p>${p}</p>`)
-      .join("");
-
-    const choicesHtml = scenario.choices
-      .map(
-        (c, i) =>
-          `<div class="scenario-choice-card"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span>${c.label}</div>`,
-      )
-      .join("");
+    const descHtml = scenarioDescriptionHTML(scenario);
+    const choicesHtml = scenarioChoiceCardsHTML(scenario);
 
     const tagHtml = showKdmaTag && kdmaLabel ? `<span class="accordion-kdma-tag">${kdmaLabel}</span>` : "";
     const summaryChoicesHtml = showChoicesInSummary
-      ? `<span class="accordion-summary-choices">${scenario.choices.map((c, i) => `<span class="summary-choice-item"><span class="choice-letter choice-${String.fromCharCode(97 + i)}">${String.fromCharCode(65 + i)}</span><span class="summary-choice-label">${c.label}</span></span>`).join("")}</span>`
+      ? `<span class="accordion-summary-choices">${scenario.choices.map((c, i) => `<span class="summary-choice-item">${choiceLetterHTML(i, { colored: true })}<span class="summary-choice-label">${c.label}</span></span>`).join("")}</span>`
       : "";
     details.innerHTML = `
       <span slot="summary" class="accordion-summary"><span class="accordion-summary-title">${scenario.title}</span>${tagHtml}${summaryChoicesHtml}</span>
@@ -179,11 +169,52 @@ function formatAdm(result) {
   return ADM_DISPLAY_NAMES[result.admName] || result.admName || "";
 }
 
-function choiceLetterHTML(choiceId, scenario) {
-  if (!scenario) return "";
-  const idx = scenario.choices.findIndex((c) => c.id === choiceId);
-  if (idx < 0) return "";
-  return `<span class="choice-letter decision-choice-letter">${String.fromCharCode(65 + idx)}</span>`;
+export function choiceLetterHTML(index, { colored = false, decision = false } = {}) {
+  if (index < 0) return "";
+  const letter = String.fromCharCode(65 + index);
+  const colorClass = colored ? ` choice-${String.fromCharCode(97 + index)}` : "";
+  const decisionClass = decision ? " decision-choice-letter" : "";
+  return `<span class="choice-letter${decisionClass}${colorClass}">${letter}</span>`;
+}
+
+export function scenarioDescriptionHTML(scenario) {
+  return scenario.description
+    .split("\n")
+    .filter((p) => p.trim())
+    .map((p) => `<p>${p}</p>`)
+    .join("");
+}
+
+export function scenarioChoiceCardsHTML(scenario) {
+  return scenario.choices
+    .map((c, i) =>
+      `<div class="scenario-choice-card">${choiceLetterHTML(i, { colored: true })}${c.label}</div>`,
+    )
+    .join("");
+}
+
+export function deciderNodeHTML({ icon, label, modelName, className = "decider-node" }) {
+  return `
+    <div class="${className}">
+      <div class="decider-node-icon">${icon}</div>
+      <div class="decider-node-text">
+        <div class="decider-label">${label}</div>
+        <div class="decider-model-name">${modelName}</div>
+      </div>
+    </div>
+  `;
+}
+
+export function decisionPanelHTML({ letterHTML, decision, justification, isOpen = false }) {
+  return `
+    <wa-details class="decision-panel"${isOpen ? " open" : ""}>
+      <span slot="summary" class="decision-panel-summary">
+        <span class="decision-panel-choice">${letterHTML}${decision}</span>
+        <span class="decision-panel-justification-preview">${justification}</span>
+      </span>
+      <div class="decision-rationale">${justification}</div>
+    </wa-details>
+  `;
 }
 
 export function renderDecisionComparison(container, baseline, aligned, scenario, openState) {
@@ -193,12 +224,14 @@ export function renderDecisionComparison(container, baseline, aligned, scenario,
   const alignedLlm = formatLlm(aligned);
   const baseOpen = openState?.[0] ? " open" : "";
   const alignedOpen = openState?.[1] ? " open" : "";
+  const baselineIdx = scenario.choices.findIndex((c) => c.id === baseline.choiceId);
+  const alignedIdx = scenario.choices.findIndex((c) => c.id === aligned.choiceId);
   container.innerHTML = `
     <div class="decision-comparison">
       <div class="decision-col">
         <div class="eyebrow">Baseline Language Model</div>
         <div class="decision-model-info">${baselineLlm}</div>
-        <div class="decision-choice">${choiceLetterHTML(baseline.choiceId, scenario)}${baseline.decision}</div>
+        <div class="decision-choice">${choiceLetterHTML(baselineIdx, { decision: true })}${baseline.decision}</div>
         <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${baseOpen}><div class="decision-rationale">${baseline.justification}</div></wa-details>
       </div>
       <div class="comparison-divider">
@@ -209,7 +242,7 @@ export function renderDecisionComparison(container, baseline, aligned, scenario,
       <div class="decision-col">
         <div class="eyebrow">Value Aligned Decider</div>
         <div class="decision-model-info">${alignedAdm} · ${alignedLlm}</div>
-        <div class="decision-choice">${choiceLetterHTML(aligned.choiceId, scenario)}${aligned.decision}</div>
+        <div class="decision-choice">${choiceLetterHTML(alignedIdx, { decision: true })}${aligned.decision}</div>
         <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${alignedOpen}><div class="decision-rationale">${aligned.justification}</div></wa-details>
       </div>
     </div>
