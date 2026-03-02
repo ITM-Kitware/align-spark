@@ -205,8 +205,8 @@ export function deciderNodeHTML({ icon, label, modelName, className = "decider-n
   `;
 }
 
-export function decisionPanelHTML({ letterHTML, decision, justification, isOpen = false }) {
-  return `
+export function decisionPanelHTML({ letterHTML, decision, justification, icon = "", isOpen = false }) {
+  const panelHtml = `
     <wa-details class="decision-panel"${isOpen ? " open" : ""}>
       <span slot="summary" class="decision-panel-summary">
         <span class="decision-panel-choice">${letterHTML}${decision}</span>
@@ -218,6 +218,8 @@ export function decisionPanelHTML({ letterHTML, decision, justification, isOpen 
       </div>
     </wa-details>
   `;
+  if (!icon) return panelHtml;
+  return `<div class="decision-panel-wrap">${panelHtml}<span class="decision-panel-badge">${icon}</span></div>`;
 }
 
 export function renderDecisionComparison(container, baseline, aligned, scenario, openState) {

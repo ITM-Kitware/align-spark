@@ -1,16 +1,15 @@
 import {
   SCENARIOS,
-  PRESETS,
   DIMENSIONS,
   decide,
   ready,
-  buildPresetChips,
   buildValueControls,
   setSliderValues,
+  levelToSliderValue,
+  sliderValueToLevel,
   buildScenarioAccordion,
   getDetailsOpenState,
   getScenario,
-  getPreset,
   choiceLetterHTML,
   scenarioDescriptionHTML,
   scenarioChoiceCardsHTML,
@@ -23,7 +22,6 @@ import {
 const state = {
   step: -1,
   scenarioId: null,
-  presetId: null,
   values: {},
 };
 
@@ -59,13 +57,13 @@ const STEPS = [
     id: "alignment",
     heading: "Value Aligned AI",
     subtitle: "Now the decision maker uses your values alongside the scenario — aligning its choice to your priorities.",
-    zones: { scenario: "summary-labeled", values: "accordion", connectors: "crossarm", "decider-aligned": true, "decision-aligned": true },
+    zones: { scenario: "summary-labeled", values: "single", connectors: "crossarm", "decider-aligned": true, "decision-aligned": true },
   },
   {
     id: "comparison",
-    heading: "The Shift",
+    heading: "Compare",
     subtitle: "Compare what the AI chooses with and without your values.",
-    zones: { scenario: "summary-labeled", values: "accordion", connectors: "crossarm", "decider-baseline": true, "decider-aligned": true, "decision-baseline": true, "decision-aligned": true },
+    zones: { scenario: "summary-labeled", values: "single", connectors: "crossarm", "decider-baseline": true, "decider-aligned": true, "decision-baseline": true, "decision-aligned": true },
   },
   {
     id: "sandbox",
@@ -149,6 +147,7 @@ const renderDecisionBaseline = async (container) => {
     letterHTML: choiceLetterHTML(idx, { colored: true, decision: true }),
     decision: result.decision,
     justification: result.justification,
+    icon: "&#x1F916;",
     isOpen: openState?.[0],
   });
 };
@@ -156,27 +155,64 @@ const renderDecisionBaseline = async (container) => {
 const renderValuesWithDecider = (container) => {
   container.innerHTML = `
     <div class="values-centered-flow">
-      <wa-details class="values-accordion" open>
-        <span slot="summary" class="values-presets" data-simple-presets></span>
+      <div class="flow-input-label">Input Values</div>
+      <wa-details class="values-accordion values-fixed-open values-no-summary" open>
         <div class="values-sliders" data-simple-sliders></div>
       </wa-details>
       <div class="values-adm-stem"></div>
       ${deciderNodeHTML({ icon: "&#x1F9ED;", label: "Value Aligned Decider", modelName: "Alignment Algorithm", className: "aligned-decider-node" })}
     </div>
   `;
-  buildPresetChips(container.querySelector("[data-simple-presets]"), state.presetId, handleSimplePresetSelect);
+  container.querySelector("wa-details").addEventListener("wa-hide", (e) => e.preventDefault());
   buildValueControls(container.querySelector("[data-simple-sliders]"), state.values, handleSimpleValuesChange);
+};
+
+const renderValueSingle = (container) => {
+  const scenario = getScenario(state.scenarioId);
+  const dim = DIMENSIONS.find((d) => d.id === scenario.kdmaType);
+  if (!dim) return;
+
+  const level = state.values[dim.id] || "medium";
+  const sliderVal = levelToSliderValue(level);
+  const LEVEL_LABELS = { 0: "Low", 50: "Medium", 100: "High" };
+
+  container.innerHTML = `
+    <div class="flow-input-label">Input Value</div>
+    <wa-details class="values-single">
+      <span slot="summary" class="single-slider-summary" data-single-sliders>
+        <div class="slider-row">
+          <div class="slider-label">${dim.label}</div>
+          <wa-slider min="0" max="100" step="50" value="${sliderVal}" data-dim="${dim.id}" with-markers></wa-slider>
+          <div class="slider-level" data-level-label="${dim.id}">${LEVEL_LABELS[sliderVal]}</div>
+        </div>
+      </span>
+    </wa-details>
+  `;
+
+  const details = container.querySelector("wa-details");
+  details.addEventListener("wa-show", (e) => e.preventDefault());
+
+  const slidersContainer = container.querySelector("[data-single-sliders]");
+  slidersContainer.addEventListener("input", (e) => {
+    const range = e.target.closest("wa-slider");
+    if (!range) return;
+    const val = Number(range.value);
+    const label = slidersContainer.querySelector(`[data-level-label="${dim.id}"]`);
+    if (label) label.textContent = LEVEL_LABELS[val] || "Medium";
+    const newValues = { ...state.values, [dim.id]: sliderValueToLevel(val) };
+    handleValuesChange(newValues);
+  });
 };
 
 const renderValuesAccordion = (container, { open = false } = {}) => {
   container.innerHTML = `
-    <div class="flow-input-label">Value Profile</div>
-    <wa-details class="values-accordion"${open ? " open" : ""}>
-      <span slot="summary" class="values-presets" data-values-presets></span>
+    <div class="flow-input-label">Input Values</div>
+    <wa-details class="values-accordion values-fixed-open"${open ? " open" : ""}>
+      <span slot="summary">Input Values</span>
       <div class="values-sliders" data-values-sliders></div>
     </wa-details>
   `;
-  buildPresetChips(container.querySelector("[data-values-presets]"), state.presetId, handlePresetSelect);
+  container.querySelector("wa-details").addEventListener("wa-hide", (e) => e.preventDefault());
   buildValueControls(container.querySelector("[data-values-sliders]"), state.values, handleValuesChange);
 };
 
@@ -207,6 +243,7 @@ const renderAlignedDecision = async (container) => {
         letterHTML: choiceLetterHTML(idx, { colored: true, decision: true }),
         decision: result.decision,
         justification: result.justification,
+        icon: "&#x1F9ED;",
         isOpen: wasOpen,
       })}
     </div>
@@ -225,6 +262,7 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
           letterHTML: choiceLetterHTML(baselineIdx, { colored: true, decision: true }),
           decision: baseline.decision,
           justification: baseline.justification,
+          icon: "&#x1F916;",
           isOpen: openState?.[0],
         })}
       </div>
@@ -233,6 +271,7 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
           letterHTML: choiceLetterHTML(alignedIdx, { colored: true, decision: true }),
           decision: aligned.decision,
           justification: aligned.justification,
+          icon: "&#x1F9ED;",
           isOpen: openState?.[1],
         })}
       </div>
@@ -343,13 +382,13 @@ const renderComparisonFlow = async (container, variant) => {
 
   const valuesColHtml = isSandbox
     ? `<wa-details class="values-accordion" open data-comp-sandbox-values>
-        <span slot="summary" class="values-presets" data-comp-sandbox-presets></span>
+        <span slot="summary">Your Values</span>
         <div class="values-sliders" data-comp-sandbox-sliders></div>
       </wa-details>
       <div class="sandbox-values-stem"></div>`
-    : `<div class="flow-input-label">Value Profile</div>
+    : `<div class="flow-input-label">Your Values</div>
       <wa-details class="values-accordion"${prevValuesOpen ? " open" : ""} data-comp-values>
-        <span slot="summary" class="values-presets" data-comp-presets></span>
+        <span slot="summary">Your Values</span>
         <div class="values-sliders" data-comp-sliders></div>
       </wa-details>`;
 
@@ -389,7 +428,6 @@ const renderComparisonFlow = async (container, variant) => {
       state.scenarioId,
       handleSandboxScenarioChange,
     );
-    buildPresetChips(container.querySelector("[data-comp-sandbox-presets]"), state.presetId, handleSandboxPresetSelect);
     buildValueControls(container.querySelector("[data-comp-sandbox-sliders]"), state.values, handleSandboxValuesChange);
     wireCrossarmListeners(container,
       container.querySelector("[data-comp-sandbox-values]"),
@@ -398,7 +436,6 @@ const renderComparisonFlow = async (container, variant) => {
   } else {
     const compScenario = container.querySelector("[data-comp-scenario]");
     renderScenarioSummary(compScenario, { wasOpen: prevScenarioOpen });
-    buildPresetChips(container.querySelector("[data-comp-presets]"), state.presetId, handleComparisonPresetSelect);
     buildValueControls(container.querySelector("[data-comp-sliders]"), state.values, handleComparisonValuesChange);
     wireCrossarmListeners(container,
       container.querySelector("[data-comp-values]"),
@@ -467,41 +504,22 @@ const renderAlignedZones = async () => {
   await renderAlignedDecision($('[data-zone="decision-aligned"]'));
 };
 
-const makePresetHandler = (afterUpdate) => async (presetId) => {
-  state.presetId = presetId;
-  state.values = { ...getPreset(presetId).values };
-  syncAllValueControls();
-  if (afterUpdate) await afterUpdate();
-};
-
 const makeValuesHandler = (afterUpdate) => async (newValues) => {
   state.values = newValues;
-  state.presetId = null;
-  syncAllValueControls();
+  syncAllSliders();
   if (afterUpdate) await afterUpdate();
 };
 
-const handleSimplePresetSelect = makePresetHandler();
 const handleSimpleValuesChange = makeValuesHandler();
-const handlePresetSelect = makePresetHandler(renderAlignedZones);
 const handleValuesChange = makeValuesHandler(renderAlignedZones);
-const handleComparisonPresetSelect = makePresetHandler(refreshComparisonZone);
 const handleComparisonValuesChange = makeValuesHandler(refreshComparisonZone);
-const handleSandboxPresetSelect = makePresetHandler(refreshComparisonZone);
 const handleSandboxValuesChange = makeValuesHandler(refreshComparisonZone);
 
-const VALUE_CONTROL_SETS = [
-  { selector: "simple", presetHandler: handleSimplePresetSelect },
-  { selector: "values", presetHandler: handlePresetSelect },
-  { selector: "comp", presetHandler: handleComparisonPresetSelect },
-  { selector: "comp-sandbox", presetHandler: handleSandboxPresetSelect },
-];
+const SLIDER_SELECTORS = ["simple", "values", "single", "comp", "comp-sandbox"];
 
-const syncAllValueControls = () => {
-  VALUE_CONTROL_SETS.forEach(({ selector, presetHandler }) => {
-    const presets = $(`[data-${selector}-presets]`);
+const syncAllSliders = () => {
+  SLIDER_SELECTORS.forEach((selector) => {
     const sliders = $(`[data-${selector}-sliders]`);
-    if (presets) buildPresetChips(presets, state.presetId, presetHandler);
     if (sliders) setSliderValues(sliders, state.values);
   });
 };
@@ -538,6 +556,7 @@ const renderZone = async (zoneId, variant) => {
       break;
     case "values":
       if (variant === "with-decider") renderValuesWithDecider(zone);
+      else if (variant === "single") renderValueSingle(zone);
       else renderValuesAccordion(zone, { open: variant === "accordion-open" });
       break;
     case "connectors":
@@ -708,7 +727,6 @@ const init = async () => {
 
 ready.then(() => {
   state.scenarioId = SCENARIOS[0].id;
-  state.presetId = PRESETS[0].id;
-  state.values = { ...PRESETS[0].values };
+  state.values = Object.fromEntries(DIMENSIONS.map((d) => [d.id, "medium"]));
   init();
 });
