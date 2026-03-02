@@ -161,11 +161,11 @@ const ADM_DISPLAY_NAMES = {
   phase2_pipeline_zeroshot_comparative_regression: "Comparative Regression",
 };
 
-function formatLlm(result) {
+export function formatLlm(result) {
   return result.llmBackbone?.split("/").pop() || "";
 }
 
-function formatAdm(result) {
+export function formatAdm(result) {
   return ADM_DISPLAY_NAMES[result.admName] || result.admName || "";
 }
 
@@ -210,9 +210,12 @@ export function decisionPanelHTML({ letterHTML, decision, justification, isOpen 
     <wa-details class="decision-panel"${isOpen ? " open" : ""}>
       <span slot="summary" class="decision-panel-summary">
         <span class="decision-panel-choice">${letterHTML}${decision}</span>
-        <span class="decision-panel-justification-preview">${justification}</span>
+        <span class="decision-panel-justification-preview">Justification: ${justification}</span>
       </span>
-      <div class="decision-rationale">${justification}</div>
+      <div class="decision-rationale">
+        <div class="decision-rationale-label">Justification</div>
+        ${justification}
+      </div>
     </wa-details>
   `;
 }
@@ -260,7 +263,7 @@ export function renderScenarioDescription(container, scenario) {
       <div class="scenario-choices-group">
         <div class="choices-label">The Choices</div>
         <div class="scenario-choices">
-          ${choiceParts.map((p, i) => `<div class="scenario-choice-card"><span class="choice-letter">${String.fromCharCode(65 + i)}</span>${p}</div>`).join("")}
+          ${choiceParts.map((p, i) => `<div class="scenario-choice-card">${choiceLetterHTML(i)}${p}</div>`).join("")}
         </div>
       </div>` : ""}
   `;

@@ -869,6 +869,15 @@ body {
   display: none;
 }
 
+.decision-rationale-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
 /* Sandbox scenario */
 
 .sandbox-scenario-accordion {
