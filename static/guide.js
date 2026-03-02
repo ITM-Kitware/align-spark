@@ -45,7 +45,7 @@ const STEPS = [
     id: "baseline",
     heading: "Hidden Bias",
     subtitle: "When we ask the AI to make a decision, the choice reflects the biases baked into its training — not your priorities.",
-    zones: { scenario: "summary", "decider-baseline": true, "decision-baseline": true },
+    zones: { scenario: "summary-labeled", "decider-baseline": true, "decision-baseline": true },
   },
   {
     id: "values",
@@ -69,7 +69,7 @@ const STEPS = [
     id: "sandbox",
     heading: "Experiment",
     subtitle: "Swap scenarios and adjust values to see when decisions shift.",
-    zones: { scenario: "radio-selector", values: "accordion-open", connectors: "crossarm", "decider-baseline": true, "decider-aligned": true, "decision-baseline": true, "decision-aligned": true },
+    zones: { scenario: "select-explore", values: "accordion-open", connectors: "crossarm", "decider-baseline": true, "decider-aligned": true, "decision-baseline": true, "decision-aligned": true },
   },
   {
     id: "learn-more",
@@ -90,37 +90,85 @@ const renderScenarioAccordion = (container) => {
   );
 };
 
-const renderScenarioDetailCard = (container) => {
+const scenarioDetailSummaryHTML = (scenario) => {
+  const firstParagraph = scenario.description.split("\n").find((p) => p.trim()) || "";
+  const choices = scenario.choices
+    .map((c, i) => `<span class="summary-choice-item">${choiceLetterHTML(i, { colored: true })}<span class="summary-choice-label">${c.label}</span></span>`)
+    .join("");
+  return `
+    <span class="scenario-detail-preview">${firstParagraph}</span>
+    <span class="scenario-detail-choices">${choices}</span>
+  `;
+};
+
+const updateScenarioDetail = (container) => {
   const scenario = getScenario(state.scenarioId);
   const descHtml = scenarioDescriptionHTML(scenario);
   const choicesHtml = scenarioChoiceCardsHTML(scenario);
-  const detail = container.querySelector("[data-scenario-detail]");
-  detail.innerHTML = `
+
+  container.querySelector("[data-scenario-detail-summary]").innerHTML = `
+    <span class="scenario-detail-open-title">Scenario Details</span>
+    ${scenarioDetailSummaryHTML(scenario)}
+  `;
+  container.querySelector("[data-scenario-detail-body]").innerHTML = `
     <div class="scenario-detail-description">${descHtml}</div>
     ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
   `;
 };
 
-const renderScenarioSelect = (container) => {
+const scenarioKdmaLabel = (s) => {
+  const dim = DIMENSIONS.find((d) => d.id === s.kdmaType);
+  return dim?.label || "";
+};
+
+const scenarioOptionHTML = (s, showKdma) => {
+  const endSlot = showKdma ? `<span class="option-kdma" slot="end">${scenarioKdmaLabel(s)}</span>` : "";
+  return `<wa-option value="${s.id}"${showKdma ? ` label="${s.title}"` : ""}>${s.title}${endSlot}</wa-option>`;
+};
+
+const updateSelectEndSlot = (selectEl, scenarioId) => {
+  const old = selectEl.querySelector('[slot="end"].select-kdma');
+  if (old) old.remove();
+  const scenario = getScenario(scenarioId || selectEl.value);
+  const label = scenarioKdmaLabel(scenario);
+  const span = document.createElement("span");
+  span.slot = "end";
+  span.className = "select-kdma";
+  span.textContent = label;
+  selectEl.appendChild(span);
+};
+
+const renderScenarioSelect = (container, { showLabel = false, showKdma = false, open = false, onChange = handleScenarioChange } = {}) => {
   const scenario = getScenario(state.scenarioId);
   const descHtml = scenarioDescriptionHTML(scenario);
   const choicesHtml = scenarioChoiceCardsHTML(scenario);
 
   container.innerHTML = `
-    <div class="scenario-select-container">
-      <select class="scenario-select" data-scenario-select>
-        ${SCENARIOS.map((s) => `<option value="${s.id}"${s.id === state.scenarioId ? " selected" : ""}>${s.title}</option>`).join("")}
-      </select>
-      <div class="scenario-detail-card" data-scenario-detail>
-        <div class="scenario-detail-description">${descHtml}</div>
-        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
-      </div>
+    ${showLabel ? '<div class="flow-input-label">Input Scenario</div>' : ''}
+    <div class="scenario-select-card">
+      <wa-select class="scenario-select" value="${state.scenarioId}" data-scenario-select>
+        ${SCENARIOS.map((s) => scenarioOptionHTML(s, showKdma)).join("")}
+      </wa-select>
+      <wa-details class="scenario-detail-panel"${open ? " open" : ""} data-scenario-detail>
+        <span slot="summary" class="scenario-detail-summary" data-scenario-detail-summary>
+          <span class="scenario-detail-open-title">Scenario Details</span>
+          ${scenarioDetailSummaryHTML(scenario)}
+        </span>
+        <div data-scenario-detail-body>
+          <div class="scenario-detail-description">${descHtml}</div>
+          ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+        </div>
+      </wa-details>
     </div>
   `;
 
-  container.querySelector("[data-scenario-select]").addEventListener("change", (e) => {
-    handleScenarioChange(e.target.value);
-    renderScenarioDetailCard(container);
+  const selectEl = container.querySelector("[data-scenario-select]");
+  if (showKdma) updateSelectEndSlot(selectEl);
+  selectEl.addEventListener("change", (e) => {
+    const newId = e.target.value;
+    if (showKdma) updateSelectEndSlot(e.target, newId);
+    onChange(newId);
+    updateScenarioDetail(container);
   });
 };
 
@@ -133,7 +181,7 @@ const renderScenarioSummary = (container, { showLabel = false, wasOpen = false }
     .map((c, i) => `<span class="summary-choice-item">${choiceLetterHTML(i, { colored: true })}<span class="summary-choice-label">${c.label}</span></span>`)
     .join("");
 
-  const labelHtml = showLabel ? `<div class="flow-input-label">Scenario</div>` : "";
+  const labelHtml = showLabel ? `<div class="flow-input-label">Input Scenario</div>` : "";
   container.innerHTML = `
     ${labelHtml}
     <wa-details class="baseline-scenario-panel"${wasOpen ? " open" : ""}>
@@ -147,19 +195,6 @@ const renderScenarioSummary = (container, { showLabel = false, wasOpen = false }
       </div>
     </wa-details>
   `;
-};
-
-const renderScenarioRadioSelector = (container) => {
-  container.innerHTML = `
-    <div class="flow-input-label">Scenario</div>
-    <div class="sandbox-scenario-accordion" data-sandbox-scenarios></div>
-  `;
-  buildSandboxScenarioAccordion(
-    container.querySelector("[data-sandbox-scenarios]"),
-    SCENARIOS,
-    state.scenarioId,
-    handleExploreScenarioChange,
-  );
 };
 
 const renderDeciderBaseline = async (container) => {
@@ -373,8 +408,8 @@ const drawZoneCrossarm = () => {
   if (!step?.zones?.connectors) return;
 
   let sourceEl;
-  if (step.zones.scenario === "radio-selector") {
-    sourceEl = $('[data-zone="scenario"] .scenario-radio-row.selected');
+  if (step.zones.scenario?.startsWith("select")) {
+    sourceEl = $('[data-zone="scenario"] .scenario-select-card');
   } else {
     sourceEl = $('[data-zone="scenario"] wa-details');
   }
@@ -579,8 +614,8 @@ const renderZone = async (zoneId, variant) => {
   switch (zoneId) {
     case "scenario":
       if (variant === "accordion") renderScenarioAccordion(zone);
-      else if (variant === "select") renderScenarioSelect(zone);
-      else if (variant === "radio-selector") renderScenarioRadioSelector(zone);
+      else if (variant === "select") renderScenarioSelect(zone, { open: true });
+      else if (variant === "select-explore") renderScenarioSelect(zone, { showLabel: true, showKdma: true, onChange: handleExploreScenarioChange });
       else renderScenarioSummary(zone, { showLabel: variant === "summary-labeled" });
       break;
     case "decider-baseline":
