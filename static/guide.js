@@ -39,7 +39,7 @@ const STEPS = [
     id: "scenario",
     heading: "Hard Choices",
     subtitle: "Some decisions have no right answer — only trade-offs shaped by what you value most.",
-    zones: { scenario: "accordion" },
+    zones: { scenario: "select" },
   },
   {
     id: "baseline",
@@ -88,6 +88,40 @@ const renderScenarioAccordion = (container) => {
     handleScenarioChange,
     { showKdmaTag: false, showChoicesInSummary: true },
   );
+};
+
+const renderScenarioDetailCard = (container) => {
+  const scenario = getScenario(state.scenarioId);
+  const descHtml = scenarioDescriptionHTML(scenario);
+  const choicesHtml = scenarioChoiceCardsHTML(scenario);
+  const detail = container.querySelector("[data-scenario-detail]");
+  detail.innerHTML = `
+    <div class="scenario-detail-description">${descHtml}</div>
+    ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+  `;
+};
+
+const renderScenarioSelect = (container) => {
+  const scenario = getScenario(state.scenarioId);
+  const descHtml = scenarioDescriptionHTML(scenario);
+  const choicesHtml = scenarioChoiceCardsHTML(scenario);
+
+  container.innerHTML = `
+    <div class="scenario-select-container">
+      <select class="scenario-select" data-scenario-select>
+        ${SCENARIOS.map((s) => `<option value="${s.id}"${s.id === state.scenarioId ? " selected" : ""}>${s.title}</option>`).join("")}
+      </select>
+      <div class="scenario-detail-card" data-scenario-detail>
+        <div class="scenario-detail-description">${descHtml}</div>
+        ${choicesHtml ? `<div class="scenario-choices">${choicesHtml}</div>` : ""}
+      </div>
+    </div>
+  `;
+
+  container.querySelector("[data-scenario-select]").addEventListener("change", (e) => {
+    handleScenarioChange(e.target.value);
+    renderScenarioDetailCard(container);
+  });
 };
 
 const renderScenarioSummary = (container, { showLabel = false, wasOpen = false } = {}) => {
@@ -207,7 +241,7 @@ const renderValueSingle = (container) => {
 const renderValuesAccordion = (container, { open = false } = {}) => {
   container.innerHTML = `
     <div class="flow-input-label">Input Values</div>
-    <wa-details class="values-accordion values-fixed-open"${open ? " open" : ""}>
+    <wa-details class="values-accordion values-fixed-open values-no-summary"${open ? " open" : ""}>
       <span slot="summary">Input Values</span>
       <div class="values-sliders" data-values-sliders></div>
     </wa-details>
@@ -545,6 +579,7 @@ const renderZone = async (zoneId, variant) => {
   switch (zoneId) {
     case "scenario":
       if (variant === "accordion") renderScenarioAccordion(zone);
+      else if (variant === "select") renderScenarioSelect(zone);
       else if (variant === "radio-selector") renderScenarioRadioSelector(zone);
       else renderScenarioSummary(zone, { showLabel: variant === "summary-labeled" });
       break;
