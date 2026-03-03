@@ -77,9 +77,9 @@ const withThinkingDelay = async (decisionContainer, renderFn, ms = 500) => {
 const STEPS = [
   {
     id: "intro",
-    heading: "AI Decisions You Can Trust",
+    heading: "Aligning AI with Values",
     subtitle:
-      "AI-powered decision makers carry bias from their training.<br>Personalized values can steer AIs so they make the right trade-offs.",
+      "AI-powered decision makers carry bias from their training.<br>Align System steers AIs to weigh trade-offs using your values.",
     zones: {},
   },
   {
@@ -104,7 +104,7 @@ const STEPS = [
     id: "values",
     heading: "Values are Priorities",
     subtitle:
-      "Values resolve trade-offs in tough scenarios. Set yours and the decision maker will use them in its calculation.",
+      "Values resolve trade-offs in tough scenarios. Set yours and the AI decision maker will use them in its calculation.",
     zones: { values: "with-decider" },
   },
   {
