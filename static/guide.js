@@ -36,6 +36,7 @@ const DECIDER_ZONE_MAP = {
 };
 
 let pendingComputation = null;
+const revealedDecisions = new Set();
 
 const triggerComputation = async () => {
   const fn = pendingComputation;
@@ -859,7 +860,20 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
     });
 
     entering.forEach((zoneId) => {
-      $(`[data-zone="${zoneId}"]`).classList.add("visible");
+      const zone = $(`[data-zone="${zoneId}"]`);
+      zone.innerHTML = "";
+      zone.classList.add("visible");
+    });
+
+    staying.forEach((zoneId) => {
+      const zone = $(`[data-zone="${zoneId}"]`);
+      if (zone.querySelector(".compute-decision-btn")) {
+        zone.querySelector(".compute-decision-btn").remove();
+        zone.classList.remove("pending-decision");
+      }
+      if (zoneId.startsWith("decision-")) {
+        zone.querySelectorAll(".decision-panel[open]").forEach((d) => { d.open = false; });
+      }
     });
 
     const renderPromises = [];
@@ -879,7 +893,7 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
     ];
     decisionZoneIds = nextStep.id === "sandbox"
       ? []
-      : renderedZones.filter((id) => id.startsWith("decision-"));
+      : renderedZones.filter((id) => id.startsWith("decision-") && !revealedDecisions.has(id));
     decisionZoneIds.forEach((id) => {
       const container = $(`[data-zone="${id}"]`);
       container.classList.add("pending-decision");
@@ -932,6 +946,7 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
           if (node) node.classList.remove("thinking");
         }),
       );
+      decisionZoneIds.forEach((id) => revealedDecisions.add(id));
     };
   }
 
