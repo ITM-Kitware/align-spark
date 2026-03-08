@@ -4,9 +4,8 @@ import {
   decide,
   ready,
   buildValueControls,
-  setSliderValues,
-  levelToSliderValue,
-  sliderValueToLevel,
+  setPickerValues,
+  highlightAttribute,
   buildScenarioAccordion,
   getDetailsOpenState,
   getScenario,
@@ -92,7 +91,7 @@ const STEPS = [
   },
   {
     id: "baseline",
-    heading: "Hidden Bias",
+    heading: "Implicit Bias",
     subtitle:
       "When an unaligned AI makes a decision, the choice reflects the biases baked into its training — not your priorities.",
     zones: {
@@ -174,7 +173,7 @@ const scenarioSummaryPanelHTML = (scenario, { open = false } = {}) => {
   const choiceLetters = scenario.choices
     .map(
       (c, i) =>
-        `<span class="summary-choice-item">${choiceLetterHTML(i, { colored: true })}<span class="summary-choice-label">${c.label}</span></span>`,
+        `<span class="summary-choice-item">${choiceLetterHTML(i)}<span class="summary-choice-label">${c.label}</span></span>`,
     )
     .join("");
 
@@ -271,7 +270,7 @@ const renderDeciderBaseline = async (container) => {
   const llm = formatLlm(result) || "Language Model";
   container.innerHTML = `
     <div class="decider-card">
-      ${deciderNodeHTML({ icon: "&#x1F916;", label: "Baseline Language Model", modelName: llm })}
+      ${deciderNodeHTML({ icon: "&#x1F916;", label: "Unaligned Language Model", modelName: llm })}
     </div>
   `;
 };
@@ -282,7 +281,7 @@ const renderDecisionBaseline = async (container) => {
   const idx = scenario.choices.findIndex((c) => c.id === result.choiceId);
   const openState = getDetailsOpenState(container);
   container.innerHTML = decisionPanelHTML({
-    letterHTML: choiceLetterHTML(idx, { colored: true, decision: true }),
+    letterHTML: choiceLetterHTML(idx, { decision: true }),
     decision: result.decision,
     justification: result.justification,
     icon: "&#x1F916;",
@@ -295,7 +294,7 @@ const renderValuesWithDecider = (container) => {
     <div class="values-centered-flow">
       <div class="flow-input-label">Input Values</div>
       <wa-details class="values-accordion values-fixed-open values-no-summary" open>
-        <div class="values-sliders" data-simple-sliders></div>
+        <div class="attribute-picker" data-simple-picker></div>
       </wa-details>
       <div class="values-adm-stem"></div>
       ${deciderNodeHTML({ icon: "&#x1F9ED;", label: "Value Aligned Decider", modelName: "Alignment Algorithm", className: "aligned-decider-node" })}
@@ -305,7 +304,7 @@ const renderValuesWithDecider = (container) => {
     .querySelector("wa-details")
     .addEventListener("wa-hide", (e) => e.preventDefault());
   buildValueControls(
-    container.querySelector("[data-simple-sliders]"),
+    container.querySelector("[data-simple-picker]"),
     state.values,
     handleSimpleValuesChange,
   );
@@ -317,35 +316,25 @@ const renderValueSingle = (container) => {
   if (!dim) return;
 
   const level = state.values[dim.id] || "medium";
-  const sliderVal = levelToSliderValue(level);
-  const LEVEL_LABELS = { 0: "Low", 50: "Medium", 100: "High" };
+  const LEVELS = ["low", "medium", "high"];
+  const LABELS = { low: "Low", medium: "Med", high: "High" };
 
   container.innerHTML = `
     <div class="flow-input-label">Input Value</div>
-    <wa-details class="values-single">
-      <span slot="summary" class="single-slider-summary" data-single-sliders>
-        <div class="slider-row">
-          <div class="slider-label">${dim.label}</div>
-          <wa-slider min="0" max="100" step="50" value="${sliderVal}" data-dim="${dim.id}" with-markers></wa-slider>
-          <div class="slider-level" data-level-label="${dim.id}">${LEVEL_LABELS[sliderVal]}</div>
-        </div>
-      </span>
-    </wa-details>
+    <div class="values-single-inline" data-single-picker>
+      <div class="attribute-row">
+        <div class="attribute-label">${dim.label}</div>
+        <wa-radio-group value="${level}" data-dim="${dim.id}" orientation="horizontal">
+          ${LEVELS.map((l) => `<wa-radio appearance="button" value="${l}">${LABELS[l]}</wa-radio>`).join("")}
+        </wa-radio-group>
+      </div>
+    </div>
   `;
 
-  const details = container.querySelector("wa-details");
-  details.addEventListener("wa-show", (e) => e.preventDefault());
-
-  const slidersContainer = container.querySelector("[data-single-sliders]");
-  slidersContainer.addEventListener("input", (e) => {
-    const range = e.target.closest("wa-slider");
-    if (!range) return;
-    const val = Number(range.value);
-    const label = slidersContainer.querySelector(
-      `[data-level-label="${dim.id}"]`,
-    );
-    if (label) label.textContent = LEVEL_LABELS[val] || "Medium";
-    const newValues = { ...state.values, [dim.id]: sliderValueToLevel(val) };
+  container.querySelector("[data-single-picker]").addEventListener("change", (e) => {
+    const group = e.target.closest("wa-radio-group");
+    if (!group) return;
+    const newValues = { ...state.values, [dim.id]: group.value };
     handleValuesChange(newValues);
   });
 };
@@ -355,14 +344,14 @@ const renderValuesAccordion = (container, { open = false } = {}) => {
     <div class="flow-input-label">Input Values</div>
     <wa-details class="values-accordion values-fixed-open values-no-summary"${open ? " open" : ""}>
       <span slot="summary">Input Values</span>
-      <div class="values-sliders" data-values-sliders></div>
+      <div class="attribute-picker" data-values-picker></div>
     </wa-details>
   `;
   container
     .querySelector("wa-details")
     .addEventListener("wa-hide", (e) => e.preventDefault());
   buildValueControls(
-    container.querySelector("[data-values-sliders]"),
+    container.querySelector("[data-values-picker]"),
     state.values,
     handleValuesChange,
   );
@@ -393,7 +382,7 @@ const renderAlignedDecision = async (container) => {
     <div class="aligned-decision-card">
       <div class="aligned-decision-stem"></div>
       ${decisionPanelHTML({
-        letterHTML: choiceLetterHTML(idx, { colored: true, decision: true }),
+        letterHTML: choiceLetterHTML(idx, { decision: true }),
         decision: result.decision,
         justification: result.justification,
         icon: "&#x1F9ED;",
@@ -417,7 +406,6 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
       <div class="decision-col">
         ${decisionPanelHTML({
           letterHTML: choiceLetterHTML(baselineIdx, {
-            colored: true,
             decision: true,
           }),
           decision: baseline.decision,
@@ -429,7 +417,6 @@ const renderComparisonDecisions = (container, aligned, baseline, scenario) => {
       <div class="decision-col">
         ${decisionPanelHTML({
           letterHTML: choiceLetterHTML(alignedIdx, {
-            colored: true,
             decision: true,
           }),
           decision: aligned.decision,
@@ -556,13 +543,13 @@ const renderComparisonFlow = async (container, variant) => {
   const valuesColHtml = isSandbox
     ? `<wa-details class="values-accordion" open data-comp-sandbox-values>
         <span slot="summary">Your Values</span>
-        <div class="values-sliders" data-comp-sandbox-sliders></div>
+        <div class="attribute-picker" data-comp-sandbox-picker></div>
       </wa-details>
       <div class="sandbox-values-stem"></div>`
     : `<div class="flow-input-label">Your Values</div>
       <wa-details class="values-accordion"${prevValuesOpen ? " open" : ""} data-comp-values>
         <span slot="summary">Your Values</span>
-        <div class="values-sliders" data-comp-sliders></div>
+        <div class="attribute-picker" data-comp-picker></div>
       </wa-details>`;
 
   const decisionsHtml = renderComparisonDecisions(
@@ -585,7 +572,7 @@ const renderComparisonFlow = async (container, variant) => {
       <svg class="comparison-crossarm" data-comp-crossarm></svg>
       <div class="comparison-flow-deciders">
         <div class="comparison-decider-cell" data-comp-baseline-decider>
-          ${deciderNodeHTML({ icon: "&#x1F916;", label: "Baseline Language Model", modelName: baselineLlm })}
+          ${deciderNodeHTML({ icon: "&#x1F916;", label: "Unaligned Language Model", modelName: baselineLlm })}
         </div>
         <div class="comparison-decider-cell" data-comp-aligned-decider>
           ${deciderNodeHTML({ icon: "&#x1F9ED;", label: "Value Aligned Decider", modelName: alignedModelName(aligned), className: "aligned-decider-node" })}
@@ -607,7 +594,7 @@ const renderComparisonFlow = async (container, variant) => {
       handleSandboxScenarioChange,
     );
     buildValueControls(
-      container.querySelector("[data-comp-sandbox-sliders]"),
+      container.querySelector("[data-comp-sandbox-picker]"),
       state.values,
       handleSandboxValuesChange,
     );
@@ -620,7 +607,7 @@ const renderComparisonFlow = async (container, variant) => {
     const compScenario = container.querySelector("[data-comp-scenario]");
     renderScenarioSummary(compScenario, { wasOpen: prevScenarioOpen });
     buildValueControls(
-      container.querySelector("[data-comp-sliders]"),
+      container.querySelector("[data-comp-picker]"),
       state.values,
       handleComparisonValuesChange,
     );
@@ -702,7 +689,7 @@ const renderAlignedZones = async () => {
 
 const makeValuesHandler = (afterUpdate) => async (newValues) => {
   state.values = newValues;
-  syncAllSliders();
+  syncAllPickers();
   if (afterUpdate && !pendingComputation) await afterUpdate();
 };
 
@@ -711,17 +698,25 @@ const handleValuesChange = makeValuesHandler(renderAlignedZones);
 const handleComparisonValuesChange = makeValuesHandler(refreshComparisonZone);
 const handleSandboxValuesChange = makeValuesHandler(refreshComparisonZone);
 
-const SLIDER_SELECTORS = ["simple", "values", "single", "comp", "comp-sandbox"];
+const PICKER_SELECTORS = ["simple", "values", "single", "comp", "comp-sandbox"];
 
-const syncAllSliders = () => {
-  SLIDER_SELECTORS.forEach((selector) => {
-    const sliders = $(`[data-${selector}-sliders]`);
-    if (sliders) setSliderValues(sliders, state.values);
+const syncAllPickers = () => {
+  PICKER_SELECTORS.forEach((selector) => {
+    const picker = $(`[data-${selector}-picker]`);
+    if (picker) setPickerValues(picker, state.values);
   });
+};
+
+const syncActiveAttribute = () => {
+  const picker = $("[data-values-picker]");
+  if (!picker) return;
+  const scenario = getScenario(state.scenarioId);
+  highlightAttribute(picker, scenario?.kdmaType);
 };
 
 const handleExploreScenarioChange = async (id) => {
   state.scenarioId = id;
+  syncActiveAttribute();
   await Promise.all([
     renderDeciderBaseline($('[data-zone="decider-baseline"]')),
     renderAlignedDecider($('[data-zone="decider-aligned"]')),
@@ -766,7 +761,10 @@ const renderZone = async (zoneId, variant) => {
     case "values":
       if (variant === "with-decider") renderValuesWithDecider(zone);
       else if (variant === "single") renderValueSingle(zone);
-      else renderValuesAccordion(zone, { open: variant === "accordion-open" });
+      else {
+        renderValuesAccordion(zone, { open: variant === "accordion-open" });
+        syncActiveAttribute();
+      }
       break;
     case "connectors":
       renderCrossarmConnector(zone);

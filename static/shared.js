@@ -1,13 +1,13 @@
-import { initThemeSwitcher } from "./theme-switcher.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/tag/tag.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/spinner/spinner.js";
-import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/slider/slider.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/details/details.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/card/card.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/button/button.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/badge/badge.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/select/select.js";
 import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/option/option.js";
+import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/radio-group/radio-group.js";
+import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/radio/radio.js";
 
 import { decide, ready } from "./align-engine.js";
 
@@ -15,8 +15,7 @@ const { scenarios: SCENARIOS, presets: PRESETS, dimensions: DIMENSIONS } = await
 
 export { SCENARIOS, PRESETS, DIMENSIONS, decide, ready };
 
-const LEVEL_LABELS = { 0: "Low", 50: "Medium", 100: "High" };
-const LEVEL_TO_STRING = { 0: "low", 50: "medium", 100: "high" };
+const LEVEL_LABELS = { low: "Low", medium: "Med", high: "High" };
 
 export function simulateThinking(container, ms = 500) {
   container.innerHTML = `
@@ -26,15 +25,6 @@ export function simulateThinking(container, ms = 500) {
     </div>
   `;
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function sliderValueToLevel(value) {
-  return LEVEL_TO_STRING[value] || "medium";
-}
-
-export function levelToSliderValue(level) {
-  const map = { low: 0, medium: 50, high: 100 };
-  return map[level] ?? 50;
 }
 
 export function buildPresetChips(container, currentPreset, onSelect) {
@@ -52,47 +42,47 @@ export function buildPresetChips(container, currentPreset, onSelect) {
 
 export function buildValueControls(container, values, onChange) {
   container.innerHTML = "";
-  container.classList.add("value-sliders");
+  container.classList.add("attribute-picker");
+  const LEVELS = ["low", "medium", "high"];
   DIMENSIONS.forEach((dim) => {
     const level = values[dim.id] || "low";
-    const sliderVal = levelToSliderValue(level);
     const row = document.createElement("div");
-    row.className = "slider-row";
+    row.className = "attribute-row";
     row.innerHTML = `
-      <div class="slider-label">${dim.label}</div>
-      <wa-slider min="0" max="100" step="50" value="${sliderVal}" data-dim="${dim.id}" with-markers></wa-slider>
-      <div class="slider-level" data-level-label="${dim.id}">${LEVEL_LABELS[sliderVal]}</div>
+      <div class="attribute-label">${dim.label}</div>
+      <wa-radio-group value="${level}" data-dim="${dim.id}" orientation="horizontal">
+        ${LEVELS.map((l) => `<wa-radio appearance="button" value="${l}">${LEVEL_LABELS[l]}</wa-radio>`).join("")}
+      </wa-radio-group>
     `;
     container.appendChild(row);
   });
 
-  container.addEventListener("input", (e) => {
-    const range = e.target.closest("wa-slider");
-    if (!range) return;
-    const dim = range.dataset.dim;
-    const val = Number(range.value);
-    const label = container.querySelector(`[data-level-label="${dim}"]`);
-    if (label) label.textContent = LEVEL_LABELS[val] || "Medium";
-    const newValues = getCurrentValues(container);
-    onChange(newValues);
+  container.addEventListener("change", (e) => {
+    const group = e.target.closest("wa-radio-group");
+    if (!group) return;
+    onChange(getCurrentValues(container));
   });
 }
 
-export function setSliderValues(container, values) {
+export function setPickerValues(container, values) {
   DIMENSIONS.forEach((dim) => {
     const level = values[dim.id] || "low";
-    const sliderVal = levelToSliderValue(level);
-    const range = container.querySelector(`wa-slider[data-dim="${dim.id}"]`);
-    if (range) range.value = sliderVal;
-    const label = container.querySelector(`[data-level-label="${dim.id}"]`);
-    if (label) label.textContent = LEVEL_LABELS[sliderVal] || "Medium";
+    const group = container.querySelector(`wa-radio-group[data-dim="${dim.id}"]`);
+    if (group) group.value = level;
   });
 }
 
-export function getCurrentValues(sliderContainer) {
+export function highlightAttribute(container, kdmaId) {
+  container.querySelectorAll(".attribute-row").forEach((row) => {
+    const group = row.querySelector("wa-radio-group");
+    row.classList.toggle("active", group?.dataset.dim === kdmaId);
+  });
+}
+
+export function getCurrentValues(pickerContainer) {
   const values = {};
-  sliderContainer.querySelectorAll("wa-slider").forEach((range) => {
-    values[range.dataset.dim] = sliderValueToLevel(Number(range.value));
+  pickerContainer.querySelectorAll("wa-radio-group").forEach((group) => {
+    values[group.dataset.dim] = group.value || "medium";
   });
   return values;
 }
@@ -127,7 +117,7 @@ export function buildScenarioAccordion(container, scenarios, currentId, onSelect
 
     const tagHtml = showKdmaTag && kdmaLabel ? `<span class="accordion-kdma-tag">${kdmaLabel}</span>` : "";
     const summaryChoicesHtml = showChoicesInSummary
-      ? `<span class="accordion-summary-choices">${scenario.choices.map((c, i) => `<span class="summary-choice-item">${choiceLetterHTML(i, { colored: true })}<span class="summary-choice-label">${c.label}</span></span>`).join("")}</span>`
+      ? `<span class="accordion-summary-choices">${scenario.choices.map((c, i) => `<span class="summary-choice-item">${choiceLetterHTML(i)}<span class="summary-choice-label">${c.label}</span></span>`).join("")}</span>`
       : "";
     details.innerHTML = `
       <span slot="summary" class="accordion-summary"><span class="accordion-summary-title">${scenario.title}</span>${tagHtml}${summaryChoicesHtml}</span>
@@ -190,7 +180,7 @@ export function scenarioDescriptionHTML(scenario) {
 export function scenarioChoiceCardsHTML(scenario) {
   return scenario.choices
     .map((c, i) =>
-      `<div class="scenario-choice-card">${choiceLetterHTML(i, { colored: true })}${c.label}</div>`,
+      `<div class="scenario-choice-card">${choiceLetterHTML(i)}${c.label}</div>`,
     )
     .join("");
 }
@@ -236,7 +226,7 @@ export function renderDecisionComparison(container, baseline, aligned, scenario,
   container.innerHTML = `
     <div class="decision-comparison">
       <div class="decision-col">
-        <div class="eyebrow">Baseline Language Model</div>
+        <div class="eyebrow">Unaligned Language Model</div>
         <div class="decision-model-info">${baselineLlm}</div>
         <div class="decision-choice">${choiceLetterHTML(baselineIdx, { decision: true })}${baseline.decision}</div>
         <wa-details summary="Justification" appearance="plain" class="decision-rationale-details"${baseOpen}><div class="decision-rationale">${baseline.justification}</div></wa-details>
@@ -286,4 +276,3 @@ export function getPreset(id) {
   return PRESETS.find((p) => p.id === id);
 }
 
-initThemeSwitcher();

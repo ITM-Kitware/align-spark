@@ -7,6 +7,8 @@ body {
 .guide-layout {
   display: grid;
   grid-template-columns: 140px 1fr;
+  max-width: 1320px;
+  margin: 0 auto;
 }
 
 .guide-toc {
@@ -430,7 +432,7 @@ body {
   box-shadow: none;
 }
 
-/* Step 2: Hidden Bias — narrow the content */
+/* Step 2: Implicit Bias — narrow the content */
 
 .guide-viewport[data-step="2"] .zone-scenario,
 .guide-viewport[data-step="2"] .zone-decider-baseline,
@@ -677,21 +679,20 @@ body {
   line-height: 1;
 }
 
-/* Single-value slider (steps 4 & 5) */
+/* Single-value button group (steps 4 & 5) */
 
-.values-single {
-  min-width: 420px;
-  --header-padding: 10px 16px;
-  background: none;
-  border-radius: 0;
+.values-single-inline {
+  min-width: 300px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 16px;
+  background: var(--surface);
 }
 
-.values-single::part(header),
 .values-fixed-open::part(header) {
   cursor: default;
 }
 
-.values-single::part(icon),
 .values-fixed-open::part(icon) {
   display: none;
 }
@@ -702,18 +703,6 @@ body {
 
 .values-no-summary::part(content) {
   padding: 16px 20px;
-}
-
-.single-slider-summary {
-  display: block;
-  width: 100%;
-}
-
-.single-slider-summary .slider-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 60px;
-  align-items: center;
-  gap: 12px;
 }
 
 /* Step 4: Alignment flow */
@@ -767,7 +756,7 @@ body {
   font-size: 0.78rem;
 }
 
-.values-flow .values-sliders {
+.values-flow .attribute-picker {
   max-width: none;
 }
 
@@ -868,8 +857,9 @@ body {
 
 .guide-viewport .values-accordion {
   margin-bottom: 0;
-  min-width: 420px;
+  min-width: 300px;
   --header-padding: 10px 16px;
+  --content-padding: 0 12px 12px;
   background: none;
   border-radius: 0;
 }
@@ -887,7 +877,7 @@ body {
   font-size: 0.78rem;
 }
 
-.values-accordion .values-sliders {
+.values-accordion .attribute-picker {
   max-width: none;
 }
 
