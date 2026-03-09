@@ -493,7 +493,6 @@ const scheduleDrawCrossarm = (zone) => {
 const drawZoneCrossarm = () => {
   const svg = $(".zone-connectors .crossarm-overlay");
   if (!svg) return;
-  const content = $(".step-content");
   const step = STEPS[state.step];
   if (!step?.zones?.connectors) return;
 
@@ -504,8 +503,9 @@ const drawZoneCrossarm = () => {
     sourceEl = $('[data-zone="scenario"] wa-details');
   }
   const targetEl = $('[data-zone="decider-aligned"] .aligned-decider-node');
-  if (sourceEl && targetEl && content) {
-    drawCrossarm(svg, content, sourceEl, targetEl);
+  const flow = $('[data-zone="connectors"]');
+  if (sourceEl && targetEl && flow) {
+    drawCrossarm(svg, flow, sourceEl, targetEl);
   }
 };
 
