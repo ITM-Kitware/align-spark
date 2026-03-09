@@ -682,6 +682,8 @@ body {
 /* Single-value button group (steps 4 & 5) */
 
 .values-single-inline {
+  display: grid;
+  grid-template-columns: max-content 1fr;
   min-width: 300px;
   border: 1px solid var(--border);
   border-radius: 14px;
