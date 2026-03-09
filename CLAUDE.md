@@ -62,8 +62,8 @@ The showcase variants are driven by `static/data/manifest.json`, which is **not 
 
 - **Source of truth for display config**: `build_config.yaml` (preset labels, dimension labels, scene filters)
 - **Full rebuild** (requires experiment data): `python build.py <experiments_dir> --config build_config.yaml --output-dir static/data`
-- **Upload to GitHub release**: `gh release upload data static/data/manifest.json --repo PaulHax/align-spark --clobber`
-- **Netlify build** (`build.sh`): downloads manifest.json from `https://github.com/PaulHax/align-spark/releases/download/data/manifest.json`
+- **Upload to GitHub release**: `gh release upload data static/data/manifest.json --repo ITM-Kitware/align-spark --clobber`
+- **Netlify build** (`build.sh`): downloads manifest.json from `https://github.com/ITM-Kitware/align-spark/releases/download/data/manifest.json`
 
 If you only change display config in `build_config.yaml` (labels, taglines), you also need to update the manifest.json and re-upload it to the release so Netlify picks up the changes.
 

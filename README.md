@@ -12,28 +12,7 @@ python3 -m http.server -d static 8000
 
 Then open http://localhost:8000
 
-## Demo Variants
-
-There are two independent apps:
-
-### Single-Page App (`index.html`)
-
-Self-contained demo with hardcoded mock data. Good for a quick overview.
-
-### Showcase Variants
-
-Six different UI layouts for the same demo flow, all powered by a shared manifest-driven decision engine:
-
-| Variant | Description |
-|---------|-------------|
-| [wizard.html](static/wizard.html) | Step-by-step wizard with back/next navigation |
-| [scroll.html](static/scroll.html) | Scroll-driven reveal with IntersectionObserver |
-| [accordion.html](static/accordion.html) | Collapsible panels with timeline |
-| [split.html](static/split.html) | Left/right split that expands on progression |
-| [slides.html](static/slides.html) | Presentation-style slide deck with transitions |
-| [tour.html](static/tour.html) | Three-zone grid with stage-based progression |
-
-Showcase variants require `static/data/manifest.json` to be present.
+The app requires `static/data/manifest.json` to be present (fetched at runtime).
 
 ## Tech Stack
 
