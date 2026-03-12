@@ -1,8 +1,36 @@
 export const LEVELS = { low: 0.0, medium: 0.5, high: 1.0 };
 
+/**
+ * Remove trailing incomplete sentence from text.
+ * Splits on sentence-ending punctuation (.!?) and drops any trailing
+ * fragment that doesn't end with one.
+ */
+function trimIncomplete(text) {
+  if (!text) return text;
+  const trimmed = text.replace(/[,/]+$/, "").trimEnd();
+  if (/[.!?]$/.test(trimmed)) return trimmed;
+  const lastEnd = Math.max(
+    trimmed.lastIndexOf("."),
+    trimmed.lastIndexOf("!"),
+    trimmed.lastIndexOf("?"),
+  );
+  return lastEnd === -1 ? trimmed : trimmed.slice(0, lastEnd + 1);
+}
+
+function cleanJustifications(manifest) {
+  for (const exp of Object.values(manifest.experiments)) {
+    for (const result of Object.values(exp.results)) {
+      if (result.justification) {
+        result.justification = trimIncomplete(result.justification);
+      }
+    }
+  }
+}
+
 async function loadManifest() {
   const response = await fetch("./data/manifest.json");
   const manifest = await response.json();
+  cleanJustifications(manifest);
 
   const dimensions = manifest.config.dimensions.map((d) => ({
     id: d.id,
