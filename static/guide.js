@@ -600,11 +600,8 @@ const renderComparisonFlow = async (container, variant) => {
       state.scenarioId,
       handleSandboxScenarioChange,
     );
-    buildValueControls(
-      container.querySelector("[data-comp-sandbox-picker]"),
-      state.values,
-      handleSandboxValuesChange,
-    );
+    const sandboxPicker = container.querySelector("[data-comp-sandbox-picker]");
+    buildValueControls(sandboxPicker, state.values, handleSandboxValuesChange);
     wireCrossarmListeners(
       container,
       container.querySelector("[data-comp-sandbox-values]"),
@@ -718,7 +715,7 @@ const syncActiveAttribute = () => {
   const picker = $("[data-values-picker]");
   if (!picker) return;
   const scenario = getScenario(state.scenarioId);
-  highlightAttribute(picker, scenario?.kdmaType);
+  highlightAttribute(picker, scenario?.kdmaType, { disableInactive: true });
 };
 
 const handleExploreScenarioChange = async (id) => {

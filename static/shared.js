@@ -138,10 +138,20 @@ export function setPickerValues(container, values) {
   });
 }
 
-export function highlightAttribute(container, kdmaId) {
+export function highlightAttribute(container, kdmaId, { disableInactive = false } = {}) {
   container.querySelectorAll(".attribute-row").forEach((row) => {
     const group = row.querySelector("wa-radio-group");
-    row.classList.toggle("active", group?.dataset.dim === kdmaId);
+    const isActive = group?.dataset.dim === kdmaId;
+    row.classList.toggle("active", isActive && !disableInactive);
+    row.classList.toggle("inactive", disableInactive && !isActive);
+    if (disableInactive) {
+      const icon = row.querySelector(".attribute-info[id]");
+      if (!icon) return;
+      const tooltip = document.querySelector(`wa-tooltip[for="${icon.id}"]`);
+      if (!tooltip) return;
+      const base = icon.dataset.description;
+      tooltip.textContent = isActive ? base : `(Not used with this scenario.) ${base}`;
+    }
   });
 }
 

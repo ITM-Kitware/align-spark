@@ -168,6 +168,16 @@ body {
   background: var(--accent-light);
 }
 
+.attribute-row.inactive {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.attribute-row.inactive .attribute-info {
+  pointer-events: auto;
+  opacity: 1;
+}
+
 .attribute-label {
   display: flex;
   align-items: center;
