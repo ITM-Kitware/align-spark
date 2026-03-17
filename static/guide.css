@@ -1154,6 +1154,17 @@ body {
   color: var(--accent);
 }
 
+.step-btn-jump {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.step-btn-jump:hover {
+  background: var(--accent-light);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
 .step-btn[hidden] {
   display: none;
 }

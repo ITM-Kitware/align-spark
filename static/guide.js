@@ -850,8 +850,12 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
     $("[data-step-heading]").textContent = nextStep.heading;
     $("[data-step-subtitle]").innerHTML = nextStep.subtitle;
     $("[data-prev]").hidden = index === 0;
-    $("[data-next]").hidden = index === STEPS.length - 1;
-    $("[data-scroll-hint]").hidden = index === STEPS.length - 1;
+    const isIntro = index === 0;
+    const isLast = index === STEPS.length - 1;
+    $("[data-next]").hidden = isIntro || isLast;
+    $("[data-start-guide]").hidden = !isIntro;
+    $("[data-jump-sandbox]").hidden = !isIntro;
+    $("[data-scroll-hint]").hidden = isLast;
 
     $$(".toc-pill").forEach((pill) => {
       pill.classList.toggle("active", pill.dataset.toc === nextStep.id);
@@ -962,6 +966,8 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
 const setupNav = () => {
   $("[data-prev]").addEventListener("click", () => goToStep(state.step - 1));
   $("[data-next]").addEventListener("click", () => goToStep(state.step + 1, { triggerPending: true }));
+  $("[data-start-guide]").addEventListener("click", () => goToStep(1));
+  $("[data-jump-sandbox]").addEventListener("click", () => goToStep(STEPS.findIndex((s) => s.id === "sandbox")));
 
   $$(".toc-pill").forEach((pill, i) => {
     pill.addEventListener("click", () => goToStep(i));
