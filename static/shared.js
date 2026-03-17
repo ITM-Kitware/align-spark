@@ -79,11 +79,10 @@ export function buildPresetChips(container, currentPreset, onSelect) {
 const INFO_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600" font-family="inherit">i</text></svg>';
 
 let infoUid = 0;
-const bodyTooltips = [];
-
-function cleanupBodyTooltips() {
-  bodyTooltips.forEach((tt) => tt.remove());
-  bodyTooltips.length = 0;
+export function cleanupBodyTooltips() {
+  document.querySelectorAll("body > wa-tooltip").forEach((tt) => {
+    if (!document.getElementById(tt.getAttribute("for"))) tt.remove();
+  });
 }
 
 export function appendTooltipToBody(iconId, description) {
@@ -91,7 +90,6 @@ export function appendTooltipToBody(iconId, description) {
   tooltip.setAttribute("for", iconId);
   tooltip.textContent = description;
   document.body.appendChild(tooltip);
-  bodyTooltips.push(tooltip);
 }
 
 export function attributeInfoHTML(dim) {
