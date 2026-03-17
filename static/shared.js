@@ -269,9 +269,10 @@ export function deciderNodeHTML({ icon, label, modelName, className = "decider-n
     <div class="${className}">
       <div class="decider-node-icon">${icon}</div>
       <div class="decider-node-text">
-        <div class="decider-label">${label}${infoHTML}</div>
+        <div class="decider-label">${label}</div>
         <div class="decider-model-name">${modelName}</div>
       </div>
+      ${infoHTML}
     </div>
   `;
 }
