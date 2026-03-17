@@ -261,12 +261,15 @@ export function scenarioChoiceCardsHTML(scenario) {
     .join("");
 }
 
-export function deciderNodeHTML({ icon, label, modelName, className = "decider-node" }) {
+export function deciderNodeHTML({ icon, label, modelName, className = "decider-node", description = "" }) {
+  const infoHTML = description
+    ? (() => { const id = `decider-info-${infoUid++}`; return `<span class="attribute-info decider-info" id="${id}" data-description="${description.replace(/"/g, "&quot;")}" aria-label="About ${label}">${INFO_SVG}</span>`; })()
+    : "";
   return `
     <div class="${className}">
       <div class="decider-node-icon">${icon}</div>
       <div class="decider-node-text">
-        <div class="decider-label">${label}</div>
+        <div class="decider-label">${label}${infoHTML}</div>
         <div class="decider-model-name">${modelName}</div>
       </div>
     </div>
