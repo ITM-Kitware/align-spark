@@ -78,6 +78,7 @@ wa-tooltip {
 
 .toc-section > .toc-section-label {
   margin-left: -22px;
+  view-transition-name: toc-section-label;
 }
 
 .toc-pill:hover {
@@ -1348,6 +1349,8 @@ wa-tooltip {
 ::view-transition-new(showcase-nav),
 ::view-transition-old(guide-toc),
 ::view-transition-new(guide-toc),
+::view-transition-old(toc-section-label),
+::view-transition-new(toc-section-label),
 ::view-transition-new(step-nav) {
   animation: none;
 }
