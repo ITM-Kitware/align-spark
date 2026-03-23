@@ -121,36 +121,6 @@ body {
   font-size: 0.7rem;
 }
 
-.preset-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.preset-chip {
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.preset-chip:hover {
-  border-color: var(--accent);
-  background: var(--accent-light);
-}
-
-.preset-chip.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
 .attribute-picker {
   display: grid;
   grid-template-columns: max-content 1fr;

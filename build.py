@@ -218,7 +218,6 @@ def build_manifest(experiments_root: Path, config: dict) -> dict:
         },
         "config": {
             "dimensions": build_dimensions(config, discovered_kdma_types),
-            "presets": config.get("presets", []),
         },
         "scenarios": scenarios,
         "experiments": experiment_entries,

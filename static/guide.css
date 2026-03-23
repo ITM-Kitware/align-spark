@@ -699,11 +699,6 @@ wa-tooltip {
   max-width: 560px;
 }
 
-.values-centered-flow .preset-chips {
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
 .values-adm-stem {
   width: 2px;
   height: 28px;
@@ -835,15 +830,6 @@ wa-tooltip {
   margin-bottom: 14px;
 }
 
-.values-flow .values-presets {
-  margin-bottom: 20px;
-}
-
-.values-flow .preset-chip {
-  padding: 6px 12px;
-  font-size: 0.78rem;
-}
-
 .values-flow .attribute-picker {
   max-width: none;
 }
@@ -950,19 +936,6 @@ wa-tooltip {
   --content-padding: 0 12px 12px;
   background: none;
   border-radius: 0;
-}
-
-.values-accordion .values-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  align-items: center;
-}
-
-.values-accordion .preset-chip {
-  padding: 6px 12px;
-  font-size: 0.78rem;
 }
 
 .values-accordion .attribute-picker {

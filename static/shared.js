@@ -12,9 +12,9 @@ import "https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/compo
 
 import { decide, ready } from "./align-engine.js";
 
-const { scenarios: SCENARIOS, presets: PRESETS, dimensions: DIMENSIONS } = await ready;
+const { scenarios: SCENARIOS, dimensions: DIMENSIONS } = await ready;
 
-export { SCENARIOS, PRESETS, DIMENSIONS, decide, ready };
+export { SCENARIOS, DIMENSIONS, decide, ready };
 
 const LEVEL_LABELS = { low: "Low", medium: "Med", high: "High" };
 
@@ -61,19 +61,6 @@ export function simulateThinking(container, ms = 500) {
     </div>
   `;
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function buildPresetChips(container, currentPreset, onSelect) {
-  container.innerHTML = "";
-  container.classList.add("preset-chips");
-  PRESETS.forEach((preset) => {
-    const chip = document.createElement("button");
-    chip.className = `preset-chip${preset.id === currentPreset ? " active" : ""}`;
-    chip.textContent = preset.label;
-    chip.title = preset.tagline;
-    chip.addEventListener("click", () => onSelect(preset.id));
-    container.appendChild(chip);
-  });
 }
 
 const INFO_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600" font-family="inherit">i</text></svg>';
@@ -349,8 +336,3 @@ export function getDetailsOpenState(container) {
 export function getScenario(id) {
   return SCENARIOS.find((s) => s.id === id);
 }
-
-export function getPreset(id) {
-  return PRESETS.find((p) => p.id === id);
-}
-

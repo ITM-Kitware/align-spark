@@ -35,9 +35,9 @@ Entry points are the HTML files. No build, lint, test, or install commands. Show
 
 The showcase variants all import from `shared.js`, which re-exports data and the `decide()` function from `align-engine.js` and provides shared UI builder functions.
 
-- **`align-engine.js`** — Manifest-driven decision engine. Fetches `./data/manifest.json` at load time and populates `SCENARIOS`, `PRESETS`, and `DIMENSIONS` from it. Exports a `ready` Promise that resolves when data is loaded. The `decide(scenarioId, decider, values)` function finds the closest matching experiment by KDMA value distance. Value levels are discrete: `low` (0.0), `medium` (0.5), `high` (1.0).
+- **`align-engine.js`** — Manifest-driven decision engine. Fetches `./data/manifest.json` at load time and populates `SCENARIOS` and `DIMENSIONS` from it. Exports a `ready` Promise that resolves when data is loaded. The `decide(scenarioId, decider, values)` function finds the closest matching experiment by KDMA value distance. Value levels are discrete: `low` (0.0), `medium` (0.5), `high` (1.0).
 
-- **`shared.js`** — Shared UI utilities consumed by all showcase variants. Re-exports `SCENARIOS`, `PRESETS`, `DIMENSIONS`, `decide`, and `ready` from `align-engine.js`. Exports builder functions (`buildScenarioSelector`, `buildPresetChips`, `buildValueControls`, `renderDecisionComparison`, `renderScenarioDescription`), getters (`getScenario`, `getPreset`), slider helpers (`sliderValueToLevel`, `levelToSliderValue`, `getCurrentValues`, `setSliderValues`), and display helpers (`simulateThinking`, `modelBadgeHTML`). Also initializes the theme switcher.
+- **`shared.js`** — Shared UI utilities consumed by all showcase variants. Re-exports `SCENARIOS`, `DIMENSIONS`, `decide`, and `ready` from `align-engine.js`. Exports builder functions (`buildScenarioSelector`, `buildValueControls`, `renderDecisionComparison`, `renderScenarioDescription`), getters (`getScenario`), slider helpers (`sliderValueToLevel`, `levelToSliderValue`, `getCurrentValues`, `setSliderValues`), and display helpers (`simulateThinking`, `modelBadgeHTML`). Also initializes the theme switcher.
 
 - **`theme-switcher.js`** — Color scheme picker (Kitware, Ocean, Coral, etc.) that sets CSS custom properties. Only renders its UI when a `.showcase-nav` element exists (showcase variants only).
 
@@ -46,7 +46,7 @@ The showcase variants all import from `shared.js`, which re-exports data and the
 Each variant (`wizard.js`, `scroll.js`, `tour.js`, etc.) follows the same pattern:
 - Imports from `shared.js`
 - Waits on `ready.then()` before initializing
-- Maintains local `state` object (selected scenario, preset, values)
+- Maintains local `state` object (selected scenario, values)
 - Wires up event handlers that call shared builder functions with DOM containers
 - Calls `decide()` to get baseline/aligned results
 
@@ -60,12 +60,12 @@ Each variant (`wizard.js`, `scroll.js`, `tour.js`, etc.) follows the same patter
 
 The showcase variants are driven by `static/data/manifest.json`, which is **not checked into git**. It's hosted as a GitHub release asset and downloaded during the Netlify build via `build.sh`.
 
-- **Source of truth for display config**: `build_config.yaml` (preset labels, dimension labels, scene filters)
+- **Source of truth for display config**: `build_config.yaml` (dimension labels, scene filters)
 - **Full rebuild** (requires experiment data): `python build.py <experiments_dir> --config build_config.yaml --output-dir static/data`
 - **Upload to GitHub release**: `gh release upload data static/data/manifest.json --repo ITM-Kitware/align-spark --clobber`
 - **Netlify build** (`build.sh`): downloads manifest.json from `https://github.com/ITM-Kitware/align-spark/releases/download/data/manifest.json`
 
-If you only change display config in `build_config.yaml` (labels, taglines), you also need to update the manifest.json and re-upload it to the release so Netlify picks up the changes.
+If you only change display config in `build_config.yaml` (dimension labels or scene filters), you also need to update the manifest.json and re-upload it to the release so Netlify picks up the changes.
 
 ### UI Components
 

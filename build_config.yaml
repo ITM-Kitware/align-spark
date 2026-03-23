@@ -30,22 +30,3 @@ dimensions:
   search:
     label: "Search"
     description: "How much urgency to find unknown casualties affects current treatment"
-
-# Value presets for the frontend UI.
-presets:
-  - id: medic
-    label: "By the Book"
-    tagline: "Severity first, stay focused"
-    values: {merit: low, affiliation: low, personal_safety: low, search: low}
-  - id: brothers
-    label: "Loyalty First"
-    tagline: "Take care of your own"
-    values: {merit: low, affiliation: high, personal_safety: medium, search: low}
-  - id: judge
-    label: "Character Counts"
-    tagline: "Character matters"
-    values: {merit: high, affiliation: low, personal_safety: low, search: medium}
-  - id: survivor
-    label: "Safety First"
-    tagline: "Don't be the next casualty"
-    values: {merit: low, affiliation: low, personal_safety: high, search: high}

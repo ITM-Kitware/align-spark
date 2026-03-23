@@ -47,9 +47,7 @@ async function loadManifest() {
     kdmaType: s.kdma_type,
   }));
 
-  const presets = manifest.config.presets || [];
-
-  return { manifest, dimensions, scenarios, presets };
+  return { manifest, dimensions, scenarios };
 }
 
 export const ready = loadManifest();
