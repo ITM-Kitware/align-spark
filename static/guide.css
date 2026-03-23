@@ -511,7 +511,7 @@ wa-tooltip {
   box-shadow: none;
 }
 
-/* Step 2: Implicit Bias — narrow the content */
+/* Step 2: Implicit Values — narrow the content */
 
 .guide-viewport[data-step="2"] .zone-scenario,
 .guide-viewport[data-step="2"] .zone-decider-baseline,

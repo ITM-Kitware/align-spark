@@ -90,7 +90,7 @@ const STEPS = [
     id: "intro",
     heading: "Aligning AI with Values",
     subtitle:
-      "AI-powered decision makers carry bias from their training.<br>The ALIGN System steers AIs to weigh trade-offs using your values.",
+      "AI-powered decision makers carry implicit values from their training.<br>The ALIGN System steers AIs to weigh trade-offs using your values.",
     zones: { "intro-pillars": true },
   },
   {
@@ -102,9 +102,9 @@ const STEPS = [
   },
   {
     id: "baseline",
-    heading: "Implicit Bias",
+    heading: "Implicit Values",
     subtitle:
-      "When an unaligned AI makes a decision, the choice reflects the biases baked into its training — not your priorities.",
+      "When an unaligned AI makes a decision, the choice reflects the implicit values baked into its training — not your priorities.",
     zones: {
       scenario: "summary-labeled",
       "decider-baseline": true,
@@ -113,7 +113,7 @@ const STEPS = [
   },
   {
     id: "values",
-    heading: "Values are Priorities",
+    heading: "Personal Values",
     subtitle:
       "Values resolve trade-offs in tough scenarios. Set yours and the AI decision maker will use them in its calculation.",
     zones: { values: "with-decider" },
