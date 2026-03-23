@@ -146,8 +146,6 @@ def build_manifest(experiments_root: Path, config: dict) -> dict:
     for exp in experiments:
         kdma_values = exp.config.alignment_target.kdma_values
         kdma_type = get_primary_kdma_type(kdma_values)
-        if kdma_type:
-            discovered_kdma_types.add(kdma_type)
 
         items = get_experiment_items(exp)
         matched = find_matching_item(items, scene_filter, exp.scenario_id)
@@ -178,6 +176,8 @@ def build_manifest(experiments_root: Path, config: dict) -> dict:
                     "choices": extract_choices(item),
                     "characters": extract_characters(item),
                 }
+                if kdma_type:
+                    discovered_kdma_types.add(kdma_type)
 
             result = extract_result(item)
             if result:

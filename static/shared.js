@@ -19,8 +19,6 @@ export { SCENARIOS, DIMENSIONS, decide, ready };
 const LEVEL_LABELS = { low: "Low", medium: "Med", high: "High" };
 
 const ATTRIBUTE_DESCRIPTIONS = {
-  affiliation:
-    "Affiliation refers to the group membership of patients with respect to you, a US soldier medic. The affiliation focus score reflects affiliation alone. Factors such as the medical need of the patients do not affect the score.",
   merit:
     "Merit refers to the moral deservingness of the patient. Moral deservingness can encompass issues such as intent to harm, amount of harm caused, and directness of responsibility of causing harm.",
   personal_safety:

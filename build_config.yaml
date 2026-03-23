@@ -2,9 +2,6 @@
 # Each entry selects a specific probe from a specific scenario.
 # Omit this section entirely to include ALL scenes from ALL experiments.
 scenes:
-  - scenario_id: "June2025-AF-train"
-    scene_id: "Probe 1"
-    title: "Enemy POW vs. Allied Soldier"
   - scenario_id: "June2025-MF-train"
     scene_id: "Probe 1"
     title: "Shooter vs. Victim"
@@ -21,9 +18,6 @@ dimensions:
   merit:
     label: "Merit"
     description: "How much moral character and past actions affect triage priority"
-  affiliation:
-    label: "Affiliation"
-    description: "How much group loyalty and unit membership affect triage priority"
   personal_safety:
     label: "Personal Safety"
     description: "How much self-preservation affects willingness to take risks"
