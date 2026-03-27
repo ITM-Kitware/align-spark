@@ -14,6 +14,19 @@ Then open http://localhost:8000
 
 The app requires `static/data/manifest.json` to be present (fetched at runtime).
 
+## Updating manifest.json
+
+The manifest is built from experiment data and stored as a GitHub release asset. Netlify downloads it at build time via `build.sh`.
+
+1. **Rebuild** from experiment data:
+   ```bash
+   python build.py <experiments_dir> --config build_config.yaml --output-dir static/data
+   ```
+2. **Upload** to the GitHub release:
+   ```bash
+   ./upload-data.sh
+   ```
+
 ## Tech Stack
 
 - Vanilla ES modules (no build step)
