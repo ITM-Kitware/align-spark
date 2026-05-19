@@ -856,7 +856,9 @@ const goToStep = async (index, { triggerPending = false } = {}) => {
     (prevIndex === 3 && index === 4) ||
     (prevIndex === 4 && index === 3) ||
     (prevIndex === 4 && index === 5) ||
-    (prevIndex === 5 && index === 4);
+    (prevIndex === 5 && index === 4) ||
+    (prevIndex === 3 && index === 5) ||
+    (prevIndex === 5 && index === 3);
 
   const applyChanges = async () => {
     const svg = $(".zone-connectors .crossarm-overlay");
@@ -1062,8 +1064,18 @@ const init = async () => {
   goToStep(0);
 };
 
-ready.then(() => {
+const initPromise = ready.then(() => {
   state.scenarioId = SCENARIOS[0].id;
   state.values = Object.fromEntries(DIMENSIONS.map((d) => [d.id, "medium"]));
-  init();
+  return init();
 });
+
+if (new URLSearchParams(window.location.search).has("demo")) {
+  window.__demo = {
+    ready: initPromise,
+    state,
+    goToStep,
+    triggerComputation: () => triggerComputation(),
+    setValue: (id, level) => handleValuesChange({ ...state.values, [id]: level }),
+  };
+}

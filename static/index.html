@@ -23,6 +23,17 @@
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.2.1/dist-cdn/components/option/option.js" />
     <link rel="stylesheet" href="./shared.css" />
     <link rel="stylesheet" href="./guide.css" />
+    <style id="demo-hide">
+      html.demo, html.demo body { background: #f1f5f8; }
+      html.demo .showcase-nav,
+      html[data-demo] .guide-layout { visibility: hidden; }
+    </style>
+    <script>
+      if (new URLSearchParams(location.search).has("demo")) {
+        document.documentElement.setAttribute("data-demo", "1");
+        document.documentElement.classList.add("demo");
+      }
+    </script>
   </head>
   <body>
     <nav class="showcase-nav">
@@ -133,5 +144,10 @@
     </div>
 
     <script type="module" src="./guide.js"></script>
+    <script type="module">
+      if (new URLSearchParams(location.search).has("demo")) {
+        await import("./demo.js");
+      }
+    </script>
   </body>
 </html>

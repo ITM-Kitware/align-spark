@@ -2,3 +2,8 @@ static/data/
 .venv/
 __pycache__/
 .playwright-mcp/
+
+# Demo recording outputs and temp dir
+spark-demo-*.mp4
+spark-demo-*.webm
+_video/
